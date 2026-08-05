@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+import torch.nn.functional as F
 
 class IlluminationNet(nn.Module):
     """
-    Lightweight CNN model using MobileNetV3-Small backbone for real-time 
-    illumination-invariant skin tone estimation.
+    Lightweight CNN model using MobileNetV3-Small backbone with 
+    Confidence-Weighted Spatial Pooling for real-time color constancy.
     """
     def __init__(self, pretrained=True):
         super(IlluminationNet, self).__init__()
@@ -14,42 +15,52 @@ class IlluminationNet(nn.Module):
         weights = models.MobileNet_V3_Small_Weights.DEFAULT if pretrained else None
         mobilenet = models.mobilenet_v3_small(weights=weights)
         
-        # Strip the final classification head (classifier)
-        # MobileNetV3's features module extracts the feature maps
+        # Strip the final classification head
         self.features = mobilenet.features
         
-        # Global Average Pooling
-        self.gap = nn.AdaptiveAvgPool2d((1, 1))
-        
-        # Determine the number of output channels from the features module
-        # For MobileNetV3-Small, the last feature layer outputs 576 channels
         in_features = 576
         
-        # Fully connected layer to output a 3-dimensional RGB illuminant vector
+        # 1. The Confidence Branch: Predicts spatial weights (attention map)
+        self.confidence_layer = nn.Conv2d(in_features, 1, kernel_size=1)
+        
+        # 2. The Illuminant Estimator
         self.fc = nn.Linear(in_features, 3)
         
     def forward(self, x):
         # Extract features: [B, C, H, W]
         x = self.features(x)
         
-        # Global Average Pooling: [B, C, 1, 1]
-        x = self.gap(x)
+        B, C, H, W = x.shape
         
-        # Flatten: [B, C]
-        x = torch.flatten(x, 1)
+        # Generate spatial confidence weights
+        # Shape: [B, 1, H, W]
+        conf = self.confidence_layer(x)
+        
+        # Flatten spatial dimensions to apply softmax: [B, 1, H*W]
+        conf_flat = conf.view(B, 1, -1)
+        
+        # Apply Softmax so all spatial weights sum to 1
+        conf_weights = F.softmax(conf_flat, dim=2)
+        
+        # Reshape back to spatial dimensions: [B, 1, H, W]
+        conf_weights = conf_weights.view(B, 1, H, W)
+        
+        # Multiply features by confidence weights (Confidence-Weighted Pooling)
+        weighted_features = x * conf_weights
+        
+        # Sum over spatial dimensions (replaces Global Average Pooling)
+        # Shape: [B, C]
+        pooled = torch.sum(weighted_features, dim=(2, 3))
         
         # Fully connected layer: [B, 3]
-        x = self.fc(x)
+        out = self.fc(pooled)
         
-        # Softplus activation: guarantees strictly positive light predictions
-        x = torch.nn.functional.softplus(x)
+        # Force strict positive light prediction
+        out = F.softplus(out)
         
-        # L2 Normalize the output to represent the illumination direction
-        # x = nn.functional.normalize(x, p=2, dim=1) # optional, loss handles scale
-        return x
+        return out
 
 if __name__ == "__main__":
-    # Quick test to ensure model works and outputs correct shape
     model = IlluminationNet()
     dummy_input = torch.randn(1, 3, 256, 256)
     output = model(dummy_input)
