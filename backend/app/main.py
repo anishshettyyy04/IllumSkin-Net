@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import matching
+from app.api.endpoints import matching, products, recommendations
 
 app = FastAPI(
     title="IllumSkin-Net API",
@@ -18,6 +18,8 @@ app.add_middleware(
 )
 
 app.include_router(matching.router, prefix="/api", tags=["matching"])
+app.include_router(products.router, prefix="/api/products", tags=["products"])
+app.include_router(recommendations.router, prefix="/api/matching", tags=["recommendations"])
 
 @app.get("/api/health")
 def health_check():
