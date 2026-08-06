@@ -1,0 +1,34 @@
+
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: illumskin_db
+    restart: always
+    environment:
+      POSTGRES_USER: illumskin_user
+      POSTGRES_PASSWORD: illumskin_password
+      POSTGRES_DB: illumskin_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: illumskin_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://illumskin_user:illumskin_password@db:5432/illumskin_db
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_data:

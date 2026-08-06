@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "lucide-react": "^1.29.0",
+    "onnxruntime-web": "^1.27.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
