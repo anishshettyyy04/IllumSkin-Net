@@ -77,9 +77,10 @@ def evaluate_model(data_dir="../data", weights_path="../weights/best_model.pth")
     print("="*50 + "\n")
 
 if __name__ == "__main__":
-    # Ensure paths are correct relative to where you run the script
-    project_root = os.getcwd()
+    # Resolve paths relative to this file's location (backend/../)
+    _dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.join(_dir, "..")
     evaluate_model(
-        data_dir=os.path.join(project_root, "data"), 
+        data_dir=os.path.join(project_root, "data"),
         weights_path=os.path.join(project_root, "weights", "best_model.pth")
     )

@@ -1,11 +1,8 @@
 import os
-import sys
 import cv2
 import torch
 import numpy as np
 
-# Ensure src is in the python path so we can import model.py
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from model import IlluminationNet
 
 def main():
@@ -16,9 +13,9 @@ def main():
     # 1. Model Loading
     model = IlluminationNet(pretrained=False).to(device)
     
-    # Safely construct the path to weights (using current working directory)
-    project_root = os.getcwd()
-    weights_path = os.path.join(project_root, "weights", "best_model.pth")
+    # Resolve weights path relative to this file's location (backend/../weights)
+    _dir = os.path.dirname(os.path.abspath(__file__))
+    weights_path = os.path.join(_dir, "..", "weights", "best_model.pth")
     
     if not os.path.exists(weights_path):
         print(f"Error: Could not find model weights at {weights_path}")

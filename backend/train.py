@@ -64,8 +64,9 @@ def train(data_dir, num_epochs=50, batch_size=32, lr=1e-4, device='cuda' if torc
     
     print(f"Starting training on {device}...")
     
-    # Initialize metrics logging
-    project_root = os.getcwd()
+    # Initialize metrics logging (resolve paths relative to this file)
+    _dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.join(_dir, "..")
     results_file = os.path.join(project_root, "RESULTS.md")
     weights_dir = os.path.join(project_root, "weights")
     os.makedirs(weights_dir, exist_ok=True)
@@ -126,6 +127,7 @@ def train(data_dir, num_epochs=50, batch_size=32, lr=1e-4, device='cuda' if torc
             print(f"--> Saved new best model to {save_path} (Mean AE improved to {best_mean_ae:.2f}°)")
 
 if __name__ == "__main__":
-    # Assuming 'data' directory is at the root level of the project
-    DATA_DIR = "../data" 
+    # data/ is at the monorepo root: backend/../data
+    _dir = os.path.dirname(os.path.abspath(__file__))
+    DATA_DIR = os.path.join(_dir, "..", "data")
     train(data_dir=DATA_DIR, num_epochs=50)
