@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
-import { Search, Filter as FilterIcon, SlidersHorizontal, X, ChevronDown, PackageOpen, LayoutGrid, Clock, AlertTriangle } from 'lucide-react';
+import { Search, Filter as FilterIcon, SlidersHorizontal, X, ChevronDown, PackageOpen, LayoutGrid, AlertTriangle } from 'lucide-react';
 import { ProductService } from '../services/products';
 import type { ProductBase } from '../services/products';
 

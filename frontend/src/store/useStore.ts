@@ -11,6 +11,24 @@ export interface CartItem {
   hex?: string;
   quantity: number;
   image?: string;
+  isAiRecommended?: boolean;
+  bundleId?: string;
+}
+
+export interface SavedLook {
+  id: string;
+  date: string;
+  name?: string;
+  items: Omit<CartItem, 'quantity' | 'id' | 'bundleId'>[];
+}
+
+export interface OrderRecord {
+  id: string;
+  status: string;
+  created_at: string;
+  estimated_delivery: string;
+  total: number;
+  items: CartItem[];
 }
 
 interface StoreState {
@@ -25,6 +43,14 @@ interface StoreState {
   latestAnalysis: any | null;
   setLatestAnalysis: (analysis: any) => void;
   clearAnalysis: () => void;
+  
+  // User Profile Data
+  savedLooks: SavedLook[];
+  saveLook: (look: SavedLook) => void;
+  removeLook: (id: string) => void;
+  
+  orderHistory: OrderRecord[];
+  addOrder: (order: OrderRecord) => void;
 }
 
 export const useStore = create<StoreState>()(
@@ -57,6 +83,14 @@ export const useStore = create<StoreState>()(
       latestAnalysis: null,
       setLatestAnalysis: (analysis) => set({ latestAnalysis: analysis }),
       clearAnalysis: () => set({ latestAnalysis: null }),
+      
+      // User Profile Data
+      savedLooks: [],
+      saveLook: (look) => set((state) => ({ savedLooks: [look, ...state.savedLooks] })),
+      removeLook: (id) => set((state) => ({ savedLooks: state.savedLooks.filter(l => l.id !== id) })),
+      
+      orderHistory: [],
+      addOrder: (order) => set((state) => ({ orderHistory: [order, ...state.orderHistory] })),
     }),
     {
       name: 'illumskin-storage',

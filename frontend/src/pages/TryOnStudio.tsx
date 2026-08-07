@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Camera, ShoppingBag, Activity, ShieldAlert, CheckCircle2, Circle, ShieldCheck, Sparkles, Download, SplitSquareHorizontal } from 'lucide-react';
 import { RecommendationService } from '../services/recommendations';

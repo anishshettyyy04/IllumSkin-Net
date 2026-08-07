@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ChevronRight, Activity, ShieldCheck, Zap, Palette, ShoppingBag, Quote, Mail, Star } from 'lucide-react';
 import Navbar from '../components/Navbar';

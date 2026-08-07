@@ -1,7 +1,7 @@
 import * as ort from 'onnxruntime-web';
 
-// Specify the path to the wasm binaries so they are loaded properly in Vite
-ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.0/dist/';
+// Set path to WASM binaries (using local public folder instead of jsdelivr CDN)
+ort.env.wasm.wasmPaths = '/wasm/onnx/';
 
 let session: ort.InferenceSession | null = null;
 

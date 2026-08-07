@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingBag, Search, Menu, X, User } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -85,7 +85,8 @@ export default function Navbar() {
             </button>
             <button 
               className="p-2.5 text-slate-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-full hidden sm:block"
-              aria-label="User account"
+              aria-label="User Profile"
+              onClick={() => navigate('/profile')}
             >
               <User className="w-5 h-5" />
             </button>
@@ -125,13 +126,19 @@ export default function Navbar() {
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center gap-4 border-b border-white/10 pb-6 mb-6 mt-16">
+          <div 
+            className="flex items-center gap-4 border-b border-white/10 pb-6 mb-6 mt-16 cursor-pointer hover:bg-white/5 p-2 rounded-xl transition-colors"
+            onClick={() => {
+              navigate('/profile');
+              setMobileMenuOpen(false);
+            }}
+          >
             <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
               <User className="w-6 h-6" />
             </div>
             <div>
-              <p className="font-medium text-white">Sign In</p>
-              <p className="text-xs text-slate-400">View your AI profile</p>
+              <p className="font-medium text-white">My Profile</p>
+              <p className="text-xs text-slate-400">Saved Looks & Orders</p>
             </div>
           </div>
           
