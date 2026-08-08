@@ -30,28 +30,28 @@ self.onmessage = async (e: MessageEvent) => {
       // imageData is an ImageData object from the 224x224 canvas
       const data = imageData.data; // Uint8ClampedArray of RGBA values
       
-      // We need a Float32Array of size 1 * 3 * 224 * 224
-      const float32Data = new Float32Array(3 * 224 * 224);
+      // We need a Float32Array of size 1 * 3 * 256 * 256
+      const float32Data = new Float32Array(3 * 256 * 256);
       
-      // The model expects [1, 3, 224, 224] (NCHW format, RGB)
+      // The model expects [1, 3, 256, 256] (NCHW format, RGB)
       // Normalize pixel values 0-255 to 0.0-1.0
       let i = 0;
-      for (let y = 0; y < 224; y++) {
-        for (let x = 0; x < 224; x++) {
-          const rgbaIdx = (y * 224 + x) * 4;
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const rgbaIdx = (y * 256 + x) * 4;
           
           // R
           float32Data[i] = data[rgbaIdx] / 255.0;
           // G
-          float32Data[i + 224 * 224] = data[rgbaIdx + 1] / 255.0;
+          float32Data[i + 256 * 256] = data[rgbaIdx + 1] / 255.0;
           // B
-          float32Data[i + 2 * 224 * 224] = data[rgbaIdx + 2] / 255.0;
+          float32Data[i + 2 * 256 * 256] = data[rgbaIdx + 2] / 255.0;
           
           i++;
         }
       }
       
-      const tensor = new ort.Tensor('float32', float32Data, [1, 3, 224, 224]);
+      const tensor = new ort.Tensor('float32', float32Data, [1, 3, 256, 256]);
       
       // The input node name needs to match the exported model (often 'input' or similar)
       // If we don't know the exact input name, we can get it from the session

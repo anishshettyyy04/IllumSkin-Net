@@ -148,8 +148,8 @@ export default function TryOnStudio() {
         const size = Math.min(video.videoWidth, video.videoHeight);
         const startX = (video.videoWidth - size) / 2;
         const startY = (video.videoHeight - size) / 2;
-        ctx.drawImage(video, startX, startY, size, size, 0, 0, 224, 224);
-        const imageData = ctx.getImageData(0, 0, 224, 224);
+        ctx.drawImage(video, startX, startY, size, size, 0, 0, 256, 256);
+        const imageData = ctx.getImageData(0, 0, 256, 256);
         inferenceStartRef.current = performance.now();
         workerRef.current.postMessage({ type: 'INFERENCE', imageData });
       }
@@ -292,7 +292,7 @@ export default function TryOnStudio() {
           muted 
           className="absolute min-w-full min-h-full object-cover transform -scale-x-100" 
         />
-        <canvas ref={canvasRef} width="224" height="224" className="hidden" />
+        <canvas ref={canvasRef} width="256" height="256" className="hidden" />
         
         {/* Foundation Tint Overlay */}
         {studioState === 'RESULTS' && showTint && completeLook && completeLook.foundation && (
