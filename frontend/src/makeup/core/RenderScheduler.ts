@@ -3,6 +3,7 @@ import { VirtualMakeupEngine } from '../VirtualMakeupEngine';
 
 export class RenderScheduler {
   private engine: VirtualMakeupEngine | null = null;
+  private animationFrameId: number | null = null;
 
   public attachEngine(engine: VirtualMakeupEngine) {
     this.engine = engine;
@@ -10,6 +11,34 @@ export class RenderScheduler {
 
   public detachEngine() {
     this.engine = null;
+  }
+
+  public startLoop(
+    getLandmarks: () => NormalizedLandmark[] | null | undefined,
+    getCtx: () => CanvasRenderingContext2D | null | undefined
+  ) {
+    if (this.animationFrameId !== null) return; // already running
+
+    const loop = () => {
+      const landmarks = getLandmarks();
+      const ctx = getCtx();
+      
+      if (ctx && landmarks) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        this.renderAll(ctx, landmarks);
+      }
+      
+      this.animationFrameId = requestAnimationFrame(loop);
+    };
+
+    this.animationFrameId = requestAnimationFrame(loop);
+  }
+
+  public stopLoop() {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   }
 
   /**

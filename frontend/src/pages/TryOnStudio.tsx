@@ -6,6 +6,13 @@ import type { CompleteLook } from '../services/recommendations';
 import { useStore } from '../store/useStore';
 import { useFaceMesh } from '../hooks/useFaceMesh';
 import { getLeftCheek, getRightCheek } from '../ai/mediapipe/regions';
+import { VirtualMakeupEngine } from '../makeup/VirtualMakeupEngine';
+import { RenderScheduler } from '../makeup/core/RenderScheduler';
+import { LipRenderer } from '../makeup/LipRenderer';
+import { BlushRenderer } from '../makeup/BlushRenderer';
+import { EyeRenderer } from '../makeup/EyeRenderer';
+import { BeautyIntelligenceEngine } from '../beauty/BeautyIntelligenceEngine';
+import type { ConsultationResult } from '../beauty/BeautyIntelligenceEngine';
 
 type StudioState = 'WELCOME' | 'PREPARATION' | 'ANALYSIS' | 'RESULTS';
 
@@ -23,6 +30,9 @@ export default function TryOnStudio() {
   
   // Results State
   const [completeLook, setCompleteLook] = useState<CompleteLook | null>(null);
+  const [consultation, setConsultation] = useState<ConsultationResult | null>(null);
+  const [sliderPosition, setSliderPosition] = useState(50);
+
   
   // Performance Metrics
   const [inferenceLatency, setInferenceLatency] = useState<number>(0);
@@ -44,6 +54,12 @@ export default function TryOnStudio() {
   const inferenceStartRef = useRef<number>(0);
   const intervalRef = useRef<number | null>(null);
   
+  // Engine Refs
+  const engineRef = useRef<VirtualMakeupEngine | null>(null);
+  const schedulerRef = useRef<RenderScheduler | null>(null);
+  const biEngineRef = useRef<BeautyIntelligenceEngine | null>(null);
+  const makeupCanvasRef = useRef<HTMLCanvasElement>(null);
+  
   // Face Tracking
   const faceState = useFaceMesh(videoRef);
   const landmarksRef = useRef<any>(null);
@@ -60,6 +76,17 @@ export default function TryOnStudio() {
   };
 
   useEffect(() => {
+    // Initialize AI pipeline engines
+    engineRef.current = new VirtualMakeupEngine();
+    engineRef.current.registerRenderer('Lip', new LipRenderer(256, 256));
+    engineRef.current.registerRenderer('Blush', new BlushRenderer(256, 256));
+    engineRef.current.registerRenderer('Eye', new EyeRenderer(256, 256));
+
+    schedulerRef.current = new RenderScheduler();
+    schedulerRef.current.attachEngine(engineRef.current);
+
+    biEngineRef.current = new BeautyIntelligenceEngine();
+
     // 1. Initialize Web Worker early
     workerRef.current = new Worker(new URL('../workers/onnxWorker', import.meta.url), { type: 'module' });
     
@@ -101,11 +128,37 @@ export default function TryOnStudio() {
             if (lookResponse.success) {
               setCompleteLook(lookResponse.data);
               
+              if (biEngineRef.current && engineRef.current) {
+                const consult = biEngineRef.current.generateConsultation(undertone, foundationId.toString());
+                setConsultation(consult);
+                // Apply the primary look preset
+                engineRef.current.applyPreset(consult.looks[0].preset);
+              }
+              
               setTimeout(() => {
                 setAnalysisStep(4); // "Generating Recommendations"
                 setTimeout(() => {
                   setStudioState('RESULTS');
                   if (intervalRef.current) clearInterval(intervalRef.current);
+                  
+                  if (schedulerRef.current) {
+                    schedulerRef.current.startLoop(
+                      () => landmarksRef.current,
+                      () => {
+                        const canvas = makeupCanvasRef.current;
+                        if (!canvas || !videoRef.current) return null;
+                        
+                        // Sync canvas size to video size
+                        if (canvas.width !== videoRef.current.videoWidth || canvas.height !== videoRef.current.videoHeight) {
+                          canvas.width = videoRef.current.videoWidth;
+                          canvas.height = videoRef.current.videoHeight;
+                          schedulerRef.current?.updateSize(canvas.width, canvas.height);
+                        }
+                        
+                        return canvas.getContext('2d');
+                      }
+                    );
+                  }
                 }, 1000);
               }, 1000);
             } else {
@@ -124,6 +177,7 @@ export default function TryOnStudio() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (workerRef.current) workerRef.current.terminate();
+      if (schedulerRef.current) schedulerRef.current.stopLoop();
       stopCamera();
     };
   }, []);
@@ -322,12 +376,50 @@ export default function TryOnStudio() {
         />
         <canvas ref={canvasRef} width="256" height="256" className="hidden" />
         
-        {/* Foundation Tint Overlay */}
-        {studioState === 'RESULTS' && showTint && completeLook && completeLook.foundation && (
-          <div 
-            className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-20 transition-colors duration-500"
-            style={{ backgroundColor: completeLook.foundation.hex }}
-          />
+        {/* Beauty Overlays Container */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{ clipPath: showTint ? 'none' : `polygon(${sliderPosition}% 0, 100% 0, 100% 100%, ${sliderPosition}% 100%)` }}
+        >
+          {/* Foundation Tint Overlay */}
+          {studioState === 'RESULTS' && completeLook && completeLook.foundation && (
+            <div 
+              className="absolute inset-0 mix-blend-multiply opacity-20 transition-colors duration-500"
+              style={{ backgroundColor: completeLook.foundation.hex }}
+            />
+          )}
+
+          {/* Makeup Engine Layer */}
+          {studioState === 'RESULTS' && (
+            <canvas
+              ref={makeupCanvasRef}
+              className="absolute min-w-full min-h-full object-cover transform -scale-x-100"
+            />
+          )}
+        </div>
+
+        {/* Before/After Slider UI */}
+        {studioState === 'RESULTS' && !showTint && (
+          <div className="absolute inset-0 z-40 pointer-events-auto flex items-center">
+            <input 
+              type="range" 
+              min="0" max="100" 
+              value={sliderPosition} 
+              onChange={(e) => setSliderPosition(parseInt(e.target.value))}
+              className="absolute w-full opacity-0 cursor-ew-resize h-full"
+              style={{ zIndex: 50 }}
+            />
+            {/* Visual Divider line */}
+            <div 
+              className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] pointer-events-none flex items-center justify-center -translate-x-1/2"
+              style={{ left: `${sliderPosition}%` }}
+            >
+              <div className="w-6 h-10 bg-white rounded-full shadow-lg flex items-center justify-center gap-1">
+                 <div className="w-0.5 h-4 bg-slate-300 rounded-full" />
+                 <div className="w-0.5 h-4 bg-slate-300 rounded-full" />
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -481,9 +573,18 @@ export default function TryOnStudio() {
                   </div>
                   <h2 className="text-3xl font-light mb-3">Your Complete Look</h2>
                   <p className="text-slate-300 text-sm leading-relaxed">
-                    Based on your <span className="text-white font-medium">{completeLook.undertone || 'Neutral'}</span> undertone, we found a foundation that perfectly balances your complexion. We've paired it with complementary shades for a cohesive finish.
+                    Based on your <span className="text-white font-medium">{consultation?.profile.undertone || completeLook.undertone || 'Neutral'}</span> undertone, we found a foundation that perfectly balances your complexion. We've paired it with complementary shades for a cohesive finish.
                     <br />
-                    <span className="mt-2 block text-xs text-indigo-300">{completeLook.explanation}</span>
+                    <span className="mt-2 block text-xs text-indigo-300">
+                      {consultation ? (
+                        <>
+                          <span className="font-semibold block mb-1">Harmony Score: {consultation.looks[0].harmony.score}%</span>
+                          {consultation.looks[0].explanations.standard}
+                        </>
+                      ) : (
+                        completeLook.explanation
+                      )}
+                    </span>
                   </p>
                 </div>
               )}
