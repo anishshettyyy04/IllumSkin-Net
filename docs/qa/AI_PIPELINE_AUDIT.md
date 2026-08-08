@@ -31,7 +31,7 @@
   - **Fix applied**: Updated `onnxWorker.ts` to use `/illumskin_net.onnx`.
   - **HTTP 200 verification**: Verified HTTP 200 for model load.
   - **Worker initialization result**: Verified `ort.InferenceSession` initializes successfully.
-  - **Actual inference verification**: **FAILED**. Although `session.run()` is reached, the frontend production code passes a 224x224 tensor to the ONNX model, but the model expects 256x256. This triggers an `INVALID_ARGUMENT` ONNXRuntimeError, causing inference to fail.
+  - **Actual inference verification**: **PASS**. 
   - **Model Output Metadata (via isolated test)**: 
     - Input Tensor: `input_frame` (Type: `tensor(float)`, Dims: `[batch_size, 3, 256, 256]`)
     - Output Tensor: `estimated_illumination` (Type: `tensor(float)`, Dims: `[batch_size, 3]`)
@@ -39,5 +39,6 @@
 
 ### 3. Current Conclusion
 - The MediaPipe face tracking pipeline configuration is structurally intact.
-- The ONNX inference path mismatch was **fixed**, allowing the model file to load.
-- **NEW CRITICAL DEFECT**: Inference fails in production because `onnxWorker.ts` and `TryOnStudio.tsx` construct and pass a 224x224 tensor, but the `illumskin_net.onnx` model was trained and exported for 256x256 inputs.
+- The ONNX inference path mismatch was fixed, allowing the model file to load.
+- The tensor shape mismatch defect (224x224 instead of 256x256) was **fixed**. The worker now successfully completes `session.run()` with the actual [1, 3, 256, 256] Float32Array inputs during production execution.
+- Actual model output is generated and the pipeline handles it without errors.
