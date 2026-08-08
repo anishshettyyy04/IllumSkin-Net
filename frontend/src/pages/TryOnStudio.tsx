@@ -4,6 +4,8 @@ import { ChevronLeft, Camera, ShoppingBag, Activity, ShieldAlert, CheckCircle2, 
 import { RecommendationService } from '../services/recommendations';
 import type { CompleteLook } from '../services/recommendations';
 import { useStore } from '../store/useStore';
+import { useFaceMesh } from '../hooks/useFaceMesh';
+import { getLeftCheek, getRightCheek } from '../ai/mediapipe/regions';
 
 type StudioState = 'WELCOME' | 'PREPARATION' | 'ANALYSIS' | 'RESULTS';
 
@@ -41,6 +43,13 @@ export default function TryOnStudio() {
   const isFetchingRef = useRef(false);
   const inferenceStartRef = useRef<number>(0);
   const intervalRef = useRef<number | null>(null);
+  
+  // Face Tracking
+  const faceState = useFaceMesh(videoRef);
+  const landmarksRef = useRef<any>(null);
+  useEffect(() => {
+    landmarksRef.current = faceState.landmarks;
+  }, [faceState.landmarks]);
 
   // Stop camera helper
   const stopCamera = () => {
@@ -71,6 +80,8 @@ export default function TryOnStudio() {
 
         if (isFetchingRef.current) return;
         isFetchingRef.current = true;
+        
+        console.log("[MATCH:REQUEST] user_albedo:", albedo);
         
         setAnalysisStep(2); // "Computing True Skin Albedo"
         
@@ -150,8 +161,25 @@ export default function TryOnStudio() {
         const startY = (video.videoHeight - size) / 2;
         ctx.drawImage(video, startX, startY, size, size, 0, 0, 256, 256);
         const imageData = ctx.getImageData(0, 0, 256, 256);
+        
+        let skinPoints = null;
+        if (landmarksRef.current) {
+          const leftCheek = getLeftCheek(landmarksRef.current);
+          const rightCheek = getRightCheek(landmarksRef.current);
+          const allPoints = [...leftCheek, ...rightCheek];
+          
+          skinPoints = allPoints.map(lm => {
+            const pixelX = Math.round((lm.x * video.videoWidth - startX) * (256 / size));
+            const pixelY = Math.round((lm.y * video.videoHeight - startY) * (256 / size));
+            return {
+              x: Math.max(0, Math.min(255, pixelX)),
+              y: Math.max(0, Math.min(255, pixelY))
+            };
+          });
+        }
+        
         inferenceStartRef.current = performance.now();
-        workerRef.current.postMessage({ type: 'INFERENCE', imageData });
+        workerRef.current.postMessage({ type: 'INFERENCE', imageData, skinPoints });
       }
     }, 1000);
   };
