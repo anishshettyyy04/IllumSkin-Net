@@ -155,7 +155,7 @@ export default function TryOnStudio() {
                           schedulerRef.current?.updateSize(canvas.width, canvas.height);
                         }
                         
-                        return canvas.getContext('2d');
+                        return canvas;
                       }
                     );
                   }
@@ -178,6 +178,7 @@ export default function TryOnStudio() {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (workerRef.current) workerRef.current.terminate();
       if (schedulerRef.current) schedulerRef.current.stopLoop();
+      if (engineRef.current) engineRef.current.dispose();
       stopCamera();
     };
   }, []);

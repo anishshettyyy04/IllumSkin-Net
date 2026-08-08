@@ -15,17 +15,29 @@ export class RenderScheduler {
 
   public startLoop(
     getLandmarks: () => NormalizedLandmark[] | null | undefined,
-    getCtx: () => CanvasRenderingContext2D | null | undefined
+    getCanvas: () => HTMLCanvasElement | null | undefined
   ) {
     if (this.animationFrameId !== null) return; // already running
 
+    let cachedCanvas: HTMLCanvasElement | null = null;
+    let cachedCtx: CanvasRenderingContext2D | null = null;
+
     const loop = () => {
       const landmarks = getLandmarks();
-      const ctx = getCtx();
+      const canvas = getCanvas();
       
-      if (ctx && landmarks) {
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        this.renderAll(ctx, landmarks);
+      if (canvas) {
+        if (canvas !== cachedCanvas) {
+          cachedCanvas = canvas;
+          cachedCtx = canvas.getContext('2d');
+        }
+        
+        if (cachedCtx) {
+          cachedCtx.clearRect(0, 0, cachedCtx.canvas.width, cachedCtx.canvas.height);
+          if (landmarks) {
+            this.renderAll(cachedCtx, landmarks);
+          }
+        }
       }
       
       this.animationFrameId = requestAnimationFrame(loop);
