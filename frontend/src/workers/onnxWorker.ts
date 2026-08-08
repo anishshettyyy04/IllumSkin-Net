@@ -7,7 +7,7 @@ let session: ort.InferenceSession | null = null;
 
 async function init() {
   try {
-    session = await ort.InferenceSession.create('/models/illumskin_net.onnx', {
+    session = await ort.InferenceSession.create('/illumskin_net.onnx', {
       executionProviders: ['wasm']
     });
     console.log("ONNX Session Loaded Successfully in Web Worker");
