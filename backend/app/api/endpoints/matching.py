@@ -4,12 +4,13 @@ from typing import List
 
 from app.core.database import get_db
 from app.models.product import Product, ProductCategory
+from app.schemas.common import APIResponse
 from app.schemas.matching import MatchRequest, MatchResponse, ProductMatch
 from app.core.math_utils import calculate_color_distance, calculate_match_percentage
 
 router = APIRouter()
 
-@router.post("/match-shade", response_model=MatchResponse)
+@router.post("/match-shade", response_model=APIResponse[MatchResponse])
 def match_shade(request: MatchRequest, db: Session = Depends(get_db)):
     """
     Finds the top 3 closest foundation shades to the given user albedo using 3D Euclidean distance.
@@ -21,7 +22,7 @@ def match_shade(request: MatchRequest, db: Session = Depends(get_db)):
     
     if not products:
         # Return empty list if database is empty
-        return MatchResponse(matches=[])
+        return APIResponse(success=True, data=MatchResponse(matches=[]))
         
     scored_products = []
     for product in products:
@@ -60,4 +61,8 @@ def match_shade(request: MatchRequest, db: Session = Depends(get_db)):
             )
         )
         
-    return MatchResponse(matches=response_matches)
+    return APIResponse(
+        success=True,
+        data=MatchResponse(matches=response_matches)
+    )
+

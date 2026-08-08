@@ -1,0 +1,52 @@
+[
+  {
+    "endpoint": "GET /api/products",
+    "iterations": 50,
+    "avg_ms": 5.78,
+    "min_ms": 2.81,
+    "max_ms": 83.94,
+    "failures": 0,
+    "fail_rate_pct": 0.0,
+    "req_per_sec": 172.75
+  },
+  {
+    "endpoint": "GET /api/products/1",
+    "iterations": 50,
+    "avg_ms": 3.74,
+    "min_ms": 2.69,
+    "max_ms": 7.67,
+    "failures": 0,
+    "fail_rate_pct": 0.0,
+    "req_per_sec": 267.07
+  },
+  {
+    "endpoint": "POST /api/match-shade",
+    "iterations": 50,
+    "avg_ms": 3.46,
+    "min_ms": 2.57,
+    "max_ms": 5.65,
+    "failures": 0,
+    "fail_rate_pct": 0.0,
+    "req_per_sec": 289.24
+  },
+  {
+    "endpoint": "GET /api/matching/look?foundation_id=1&undertone=Neutral",
+    "iterations": 50,
+    "avg_ms": 4.75,
+    "min_ms": 3.44,
+    "max_ms": 7.88,
+    "failures": 0,
+    "fail_rate_pct": 0.0,
+    "req_per_sec": 210.53
+  },
+  {
+    "endpoint": "POST /api/orders",
+    "iterations": 50,
+    "avg_ms": 9.71,
+    "min_ms": 7.55,
+    "max_ms": 15.04,
+    "failures": 0,
+    "fail_rate_pct": 0.0,
+    "req_per_sec": 102.98
+  }
+]

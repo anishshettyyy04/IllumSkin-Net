@@ -169,6 +169,97 @@ def get_mock_products():
             "hex_code": "#4D2E24",
             "price": 8.99,
             "in_stock": True,
+        },
+        # Lipsticks
+        {
+            "brand": "MAC",
+            "product_name": "Matte Lipstick",
+            "shade_name": "Ruby Woo",
+            "category": ProductCategory.Lipstick,
+            "undertone": "Cool",
+            "true_rgb": [0.70, 0.11, 0.15],
+            "hex_code": "#B21B27",
+            "price": 23.0,
+            "in_stock": True,
+        },
+        {
+            "brand": "Fenty Beauty",
+            "product_name": "Stunna Lip Paint",
+            "shade_name": "Uncensored",
+            "category": ProductCategory.Lipstick,
+            "undertone": "Neutral",
+            "true_rgb": [0.77, 0.05, 0.15],
+            "hex_code": "#C50C25",
+            "price": 28.0,
+            "in_stock": True,
+        },
+        {
+            "brand": "Rare Beauty",
+            "product_name": "Soft Pinch Tinted Lip Oil",
+            "shade_name": "Delight",
+            "category": ProductCategory.Lipstick,
+            "undertone": "Warm",
+            "true_rgb": [0.72, 0.36, 0.34],
+            "hex_code": "#B85B56",
+            "price": 20.0,
+            "in_stock": True,
+        },
+        # Blushes
+        {
+            "brand": "Rare Beauty",
+            "product_name": "Soft Pinch Liquid Blush",
+            "shade_name": "Hope",
+            "category": ProductCategory.Blush,
+            "undertone": "Cool",
+            "true_rgb": [0.88, 0.51, 0.51],
+            "hex_code": "#E08283",
+            "price": 23.0,
+            "in_stock": True,
+        },
+        {
+            "brand": "NARS",
+            "product_name": "Blush",
+            "shade_name": "Orgasm",
+            "category": ProductCategory.Blush,
+            "undertone": "Warm",
+            "true_rgb": [0.91, 0.49, 0.52],
+            "hex_code": "#E87E84",
+            "price": 32.0,
+            "in_stock": True,
+        },
+        {
+            "brand": "Fenty Beauty",
+            "product_name": "Cheeks Out Freestyle Cream Blush",
+            "shade_name": "Petal Poppin",
+            "category": ProductCategory.Blush,
+            "undertone": "Neutral",
+            "true_rgb": [0.88, 0.45, 0.53],
+            "hex_code": "#E07488",
+            "price": 26.0,
+            "in_stock": True,
+        },
+        # Eye
+        {
+            "brand": "Urban Decay",
+            "product_name": "Naked Eyeshadow Palette",
+            "shade_name": "Bronze Glow",
+            "category": ProductCategory.Eye,
+            "undertone": "Warm",
+            "true_rgb": [0.55, 0.40, 0.03],
+            "hex_code": "#8B6508",
+            "price": 54.0,
+            "in_stock": True,
+        },
+        {
+            "brand": "Charlotte Tilbury",
+            "product_name": "Luxury Eyeshadow Palette",
+            "shade_name": "Pillow Talk",
+            "category": ProductCategory.Eye,
+            "undertone": "Cool",
+            "true_rgb": [0.85, 0.63, 0.66],
+            "hex_code": "#D8A0A8",
+            "price": 55.0,
+            "in_stock": True,
         }
     ]
 
@@ -187,7 +278,7 @@ def seed_database():
             db.add(product)
         
         db.commit()
-        print(f"Successfully seeded {len(products)} foundation shades!")
+        print(f"Successfully seeded {len(products)} products across all categories!")
     except Exception as e:
         db.rollback()
         print(f"Error seeding database: {e}")

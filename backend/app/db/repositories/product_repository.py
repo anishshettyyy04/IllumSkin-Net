@@ -9,7 +9,15 @@ class ProductRepository:
     def get_all_products(self, category: Optional[str] = None, skip: int = 0, limit: int = 100) -> List[Product]:
         query = self.db.query(Product)
         if category:
-            query = query.filter(Product.category == category)
+            cat_match = None
+            for item in ProductCategory:
+                if item.value.lower() == category.lower():
+                    cat_match = item
+                    break
+            if cat_match:
+                query = query.filter(Product.category == cat_match)
+            else:
+                query = query.filter(Product.category == category)
         return query.offset(skip).limit(limit).all()
 
     def get_product_by_id(self, product_id: int) -> Optional[Product]:
