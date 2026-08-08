@@ -1,7 +1,12 @@
 import * as ort from 'onnxruntime-web';
+import wasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm?url';
+import mjsUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.mjs?url';
 
-// Set path to WASM binaries (using local public folder instead of jsdelivr CDN)
-ort.env.wasm.wasmPaths = '/wasm/onnx/';
+// Configure ONNX Runtime to use the Vite-bundled assets
+ort.env.wasm.wasmPaths = {
+  wasm: wasmUrl,
+  mjs: mjsUrl
+};
 
 let session: ort.InferenceSession | null = null;
 
