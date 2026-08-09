@@ -6,17 +6,18 @@ inference, and returns JSON with corrected RGB + ΔE metrics.
 
 import os
 import io
-import json
-import asyncio
-
 import cv2
+import math
 import torch
 import numpy as np
 from PIL import Image
+from pydantic import BaseModel
+from typing import List, Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from .models.productModel import get_all_products
 
-from model import IlluminationNet
+from .model import IlluminationNet
 
 # ────────────────────────────────────────────────────────────
 # Initialisation
@@ -39,14 +40,52 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = IlluminationNet(pretrained=False).to(DEVICE)
 if os.path.exists(WEIGHTS_PATH):
     model.load_state_dict(torch.load(WEIGHTS_PATH, map_location=DEVICE))
-    print(f"✅ Loaded weights from {WEIGHTS_PATH}")
+    print(f"Loaded weights from {WEIGHTS_PATH}")
 else:
-    print(f"⚠️  Weights not found at {WEIGHTS_PATH} — running with random weights")
+    print(f"Weights not found at {WEIGHTS_PATH} — running with random weights")
 model.eval()
+
+_DIR = os.path.dirname(os.path.abspath(__file__))
+face_cascade = cv2.CascadeClassifier(os.path.join(_DIR, 'haarcascade_frontalface_default.xml'))
 
 
 # ────────────────────────────────────────────────────────────
-# Helper utilities
+# 1. DATABASE SCHEMA & MOCK CATALOG
+# ────────────────────────────────────────────────────────────
+class ShadeRequest(BaseModel):
+    rgb: List[float]  # [R, G, B]
+
+def color_distance(c1, c2):
+    """Euclidean distance in RGB space"""
+    return math.sqrt(sum((a - b) ** 2 for a, b in zip(c1, c2)))
+
+@app.post("/api/match-shade")
+async def match_shade(request: ShadeRequest):
+    user_rgb = request.rgb
+    
+    # Calculate distances for all products
+    scored_catalog = []
+    products = get_all_products()
+    
+    for product in products:
+        dist = color_distance(user_rgb, product["rgb"])
+        # Simple compatibility score: max distance is ~441, scale to %
+        match_score = max(0.0, min(100.0, 100.0 - (dist / 150.0) * 100.0))
+        scored_catalog.append({
+            **product,
+            "distance": dist,
+            "matchPercentage": round(match_score, 1)
+        })
+        
+    # Sort by closest match (highest percentage)
+    scored_catalog.sort(key=lambda x: x["distance"])
+    
+    # Return top 3
+    return {"matches": scored_catalog[:3]}
+
+
+# ────────────────────────────────────────────────────────────
+# 2. LEGACY WEBSOCKET ENDPOINT
 # ────────────────────────────────────────────────────────────
 def _decode_jpeg_to_linear(data: bytes) -> np.ndarray:
     """Decode JPEG bytes → float32 linear-RGB numpy array (H, W, 3)."""
@@ -108,7 +147,20 @@ async def ws_stream(websocket: WebSocket):
         while True:
             data = await websocket.receive_bytes()
             frame_linear = _decode_jpeg_to_linear(data)
-            input_frame = cv2.resize(frame_linear, (256, 256))
+            
+            # --- Face Cropping for Inference ---
+            frame_uint8 = (np.clip(frame_linear ** (1.0 / 2.2), 0, 1.0) * 255).astype(np.uint8)
+            gray = cv2.cvtColor(frame_uint8, cv2.COLOR_RGB2GRAY)
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+            
+            if len(faces) > 0:
+                best_face = max(faces, key=lambda rect: rect[2] * rect[3])
+                x, y, w, h = best_face
+                crop_linear = frame_linear[y:y+h, x:x+w]
+            else:
+                crop_linear = frame_linear
+
+            input_frame = cv2.resize(crop_linear, (256, 256))
             input_tensor = (
                 torch.from_numpy(input_frame)
                 .permute(2, 0, 1)
