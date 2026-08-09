@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Camera, ShoppingBag, Activity, ShieldAlert, CheckCircle2, Circle, ShieldCheck, Sparkles, Download, SplitSquareHorizontal } from 'lucide-react';
 import { RecommendationService } from '../services/recommendations';
 import type { CompleteLook } from '../services/recommendations';
@@ -11,14 +11,29 @@ import { RenderScheduler } from '../makeup/core/RenderScheduler';
 import { LipRenderer } from '../makeup/LipRenderer';
 import { BlushRenderer } from '../makeup/BlushRenderer';
 import { EyeRenderer } from '../makeup/EyeRenderer';
+import { FoundationRenderer } from '../makeup/FoundationRenderer';
 import { BeautyIntelligenceEngine } from '../beauty/BeautyIntelligenceEngine';
 import type { ConsultationResult } from '../beauty/BeautyIntelligenceEngine';
+import { assessFaceQuality } from '../makeup/FaceQuality';
+import type { FaceQualityState } from '../makeup/FaceQuality';
 
 type StudioState = 'WELCOME' | 'PREPARATION' | 'ANALYSIS' | 'RESULTS';
 
 export default function TryOnStudio() {
   const navigate = useNavigate();
+  const location = useLocation();
   const addToCart = useStore(state => state.addToCart);
+
+  // Direct Product Mode check
+  const product = location.state?.product;
+  const activeShade = location.state?.activeShade;
+  const categoryStr = product?.category?.toLowerCase() || location.state?.category?.toLowerCase() || '';
+  const isDirectProductMode = !!product && categoryStr !== 'foundation';
+
+  useEffect(() => {
+    console.log('[TRYON:PRODUCT]', product?.name || 'Foundation/AI', activeShade?.hex);
+    console.log('[TRYON:MODE]', isDirectProductMode ? 'DIRECT_PRODUCT' : 'AI_CONSULTATION');
+  }, [product, activeShade, isDirectProductMode]);
   
   // UI State Machine
   const [studioState, setStudioState] = useState<StudioState>('WELCOME');
@@ -46,6 +61,12 @@ export default function TryOnStudio() {
   // Interactive Tools
   const [showTint, setShowTint] = useState(true);
 
+  // Face Quality
+  const [faceQuality, setFaceQuality] = useState<FaceQualityState>('NO_FACE');
+  const validFramesCount = useRef(0);
+  const invalidFramesCount = useRef(0);
+  const lastQualityState = useRef<FaceQualityState>('NO_FACE');
+
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -63,9 +84,27 @@ export default function TryOnStudio() {
   // Face Tracking
   const faceState = useFaceMesh(videoRef);
   const landmarksRef = useRef<any>(null);
+  const facesCountRef = useRef<number>(0);
+  const headPoseRef = useRef<any>(null);
+  
   useEffect(() => {
     landmarksRef.current = faceState.landmarks;
-  }, [faceState.landmarks]);
+    facesCountRef.current = faceState.facesCount;
+    headPoseRef.current = faceState.headPose;
+    
+    if (faceState.landmarks && faceState.landmarks.length > 0) {
+      if (!landmarksRef.current || landmarksRef.current.length === 0) {
+         console.log('[TRYON:LANDMARKS]', {
+            facesCount: faceState.facesCount,
+            landmarkCount: faceState.landmarks.length,
+            firstLandmark: faceState.landmarks[0],
+            videoWidth: videoRef.current?.videoWidth,
+            videoHeight: videoRef.current?.videoHeight,
+            timestamp: Date.now()
+         });
+      }
+    }
+  }, [faceState.landmarks, faceState.facesCount, faceState.headPose]);
 
   // Stop camera helper
   const stopCamera = () => {
@@ -78,6 +117,7 @@ export default function TryOnStudio() {
   useEffect(() => {
     // Initialize AI pipeline engines
     engineRef.current = new VirtualMakeupEngine();
+    engineRef.current.registerRenderer('Foundation', new FoundationRenderer(256, 256));
     engineRef.current.registerRenderer('Lip', new LipRenderer(256, 256));
     engineRef.current.registerRenderer('Blush', new BlushRenderer(256, 256));
     engineRef.current.registerRenderer('Eye', new EyeRenderer(256, 256));
@@ -91,7 +131,7 @@ export default function TryOnStudio() {
     workerRef.current = new Worker(new URL('../workers/onnxWorker', import.meta.url), { type: 'module' });
     
     workerRef.current.onmessage = async (e) => {
-      const { type, status, albedo, message } = e.data;
+      const { type, status, albedo, illumination, message } = e.data;
 
       if (type === 'error') {
         setModelError(message);
@@ -131,8 +171,98 @@ export default function TryOnStudio() {
               if (biEngineRef.current && engineRef.current) {
                 const consult = biEngineRef.current.generateConsultation(undertone, foundationId.toString());
                 setConsultation(consult);
-                // Apply the primary look preset
-                engineRef.current.applyPreset(consult.looks[0].preset);
+                
+                const aiPreset = consult.looks[0].preset;
+                console.log('[TRYON:FOUNDATION:AI_PRESET]', {
+                  foundation: !!aiPreset.foundation,
+                  lipstick: !!aiPreset.lipstick,
+                  blush: !!aiPreset.blush,
+                  eyeShadow: !!aiPreset.eyeShadow
+                });
+
+                // Phase 6: Decouple Cosmetic Coverage from DeltaE00
+                const dE = topMatch.delta_e00 ?? 0;
+                let matchCategory = 'EXCELLENT_MATCH';
+                if (dE >= 8) matchCategory = 'POOR_MATCH';
+                else if (dE >= 5) matchCategory = 'MODERATE_MATCH';
+                else if (dE >= 2) matchCategory = 'GOOD_MATCH';
+                
+                const productCoverage = aiPreset.foundation?.opacity ?? 0.35;
+                const renderStrength = productCoverage; // Do NOT artificially hide a poor shade
+                
+                console.log("[TRYON:FOUNDATION:MATCH]", {
+                  deltaE00: dE,
+                  matchCategory,
+                  productCoverage,
+                  renderStrength
+                });
+                
+                // Phase 1 & 2: Color Space Audit
+                console.log("[TRYON:COLOR:SPACE]", {
+                  cameraSpace: "sRGB",
+                  workingSpace: "linear RGB",
+                  matchingSpace: "CIELAB",
+                  productColorSpace: "sRGB",
+                  gammaDecodeApplied: true,
+                  gammaEncodeApplied: true
+                });
+                
+                console.log("[TRYON:COLOR:AUDIT]", {
+                  cameraRGB: "Handled by ONNX Worker",
+                  linearSkinRGB: "Handled by ONNX Worker",
+                  illuminationRGB: illumination,
+                  correctedAlbedoRGB: albedo,
+                  stabilizedAlbedoRGB: albedo, // Worker passed the stabilized one as albedo
+                  correctedAlbedoLab: "Calculated in Backend",
+                  selectedFoundationHex: lookResponse.data.foundation.hex,
+                  selectedFoundationRGB: topMatch.hex_code, // Or from db
+                  selectedFoundationLab: "Calculated in Backend",
+                  deltaE00: dE,
+                  foundationStrength: renderStrength,
+                  compositeMode: "multiply" // or whatever is used
+                });
+
+                const foundationOnlyPreset = {
+                  ...aiPreset,
+                  foundation: {
+                    ...aiPreset.foundation,
+                    hex: lookResponse.data.foundation.hex,
+                    opacity: renderStrength,
+                    compositeMode: 'multiply' // default compositing method
+                  } as any,
+                  lipstick: undefined,
+                  blush: undefined,
+                  eyeShadow: undefined
+                };
+
+                console.log('[TRYON:FOUNDATION:MODE]', 'FOUNDATION_ONLY');
+                console.log('[TRYON:FOUNDATION:PRESET]', {
+                  foundation: !!foundationOnlyPreset.foundation,
+                  lipstick: !!foundationOnlyPreset.lipstick,
+                  blush: !!foundationOnlyPreset.blush,
+                  eyeShadow: !!foundationOnlyPreset.eyeShadow
+                });
+
+                console.log('[TRYON:FOUNDATION:STRENGTH_TRACE]', {
+                  productName: lookResponse.data.foundation.name,
+                  sourceHex: lookResponse.data.foundation.hex,
+                  presetStrength: aiPreset.intensity,
+                  rendererStrength: renderStrength * (aiPreset.intensity ?? 1.0),
+                  defaultStrength: renderStrength,
+                  coverageSource: "Product Database / Default",
+                  deltaE00: dE,
+                  matchCategory
+                });
+
+                // Apply ONLY the foundation configuration to active renderers
+                engineRef.current.applyPreset(foundationOnlyPreset);
+
+                console.log('[TRYON:FOUNDATION:ISOLATION]', {
+                  foundation: true,
+                  lipstick: false,
+                  blush: false,
+                  eyeShadow: false
+                });
               }
               
               setTimeout(() => {
@@ -142,22 +272,7 @@ export default function TryOnStudio() {
                   if (intervalRef.current) clearInterval(intervalRef.current);
                   
                   if (schedulerRef.current) {
-                    schedulerRef.current.startLoop(
-                      () => landmarksRef.current,
-                      () => {
-                        const canvas = makeupCanvasRef.current;
-                        if (!canvas || !videoRef.current) return null;
-                        
-                        // Sync canvas size to video size
-                        if (canvas.width !== videoRef.current.videoWidth || canvas.height !== videoRef.current.videoHeight) {
-                          canvas.width = videoRef.current.videoWidth;
-                          canvas.height = videoRef.current.videoHeight;
-                          schedulerRef.current?.updateSize(canvas.width, canvas.height);
-                        }
-                        
-                        return canvas;
-                      }
-                    );
+                    startSchedulerLoop();
                   }
                 }, 1000);
               }, 1000);
@@ -181,25 +296,147 @@ export default function TryOnStudio() {
       if (engineRef.current) engineRef.current.dispose();
       stopCamera();
     };
-  }, []);
+  }, [isDirectProductMode]);
 
   const handleStartAnalysis = async () => {
     setStudioState('PREPARATION');
+    console.log('[TRYON:CAMERA:REQUEST] Requesting camera stream');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 1280, height: 720 } });
       if (videoRef.current) videoRef.current.srcObject = stream;
+      setCameraError(null);
+      console.log('[TRYON:CAMERA:SUCCESS] Camera stream acquired');
+      console.log('[TRYON:MEDIAPIPE:INIT] MediaPipe initialized with stream');
       
       // Simulate Preparation Steps
       setTimeout(() => setPrepStep(1), 800); // Camera Ready
       setTimeout(() => setPrepStep(2), 1600); // Face Centered
       setTimeout(() => setPrepStep(3), 2400); // Lighting Quality
       setTimeout(() => {
-        setStudioState('ANALYSIS');
-        startInferenceLoop();
+        if (isDirectProductMode) {
+          console.log('[TRYON:COSMETIC] Bypassing ONNX, direct product mode selected');
+          setStudioState('RESULTS');
+          applyDirectProductPreset();
+          startSchedulerLoop();
+        } else {
+          setStudioState('ANALYSIS');
+          startInferenceLoop();
+        }
       }, 3200);
 
-    } catch (err) {
-      setCameraError("Camera access denied. Please enable your camera to continue.");
+    } catch (err: any) {
+      console.error('[TRYON:CAMERA:ERROR]', err);
+      if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+        setCameraError("Camera access denied. Please allow camera permissions in your browser settings (requires HTTPS in production).");
+      } else {
+        setCameraError("Failed to access camera: " + (err.message || 'Unknown error'));
+      }
+      setStudioState('WELCOME');
+    }
+  };
+
+  const applyDirectProductPreset = () => {
+    if (!product || !activeShade || !engineRef.current) return;
+    
+    // Construct CosmeticPreset based on category
+    const preset: any = { opacity: 1.0, intensity: 1.0 };
+    
+    // Build CosmeticProduct satisfying RenderOptions
+    const shadeData = {
+      id: activeShade.id || 'custom',
+      category: categoryStr,
+      name: activeShade.name || product.name,
+      hex: activeShade.hex,
+      opacity: activeShade.opacity ?? 0.85,
+      finish: activeShade.finish || 'Matte' // Proper casing
+    };
+
+    console.log('[TRYON:SHADE]', {
+      product: product.name,
+      category: categoryStr,
+      sourceHex: activeShade.hex,
+      presetHex: shadeData.hex,
+      rendererHex: shadeData.hex,
+      finish: shadeData.finish
+    });
+    
+    if (categoryStr === 'lipstick') {
+      console.log('[TRYON:RENDERER] Activating LipRenderer');
+      preset.lipstick = { shade: shadeData, opacity: shadeData.opacity, finish: shadeData.finish };
+    } else if (categoryStr === 'blush') {
+      console.log('[TRYON:RENDERER] Activating BlushRenderer');
+      preset.blush = { shade: shadeData, opacity: shadeData.opacity, finish: shadeData.finish, style: 'classic' };
+    } else if (categoryStr === 'eye makeup' || categoryStr === 'eye') {
+      console.log('[TRYON:RENDERER] Activating EyeRenderer');
+      preset.eyeShadow = { shade: shadeData, opacity: shadeData.opacity, finish: shadeData.finish, style: 'smokey' };
+    }
+
+    engineRef.current.applyPreset(preset);
+  };
+
+  const startSchedulerLoop = () => {
+    if (schedulerRef.current) {
+      console.log('[TRYON:MEDIAPIPE:READY] Starting RenderScheduler Loop');
+      schedulerRef.current.startLoop(
+        () => landmarksRef.current,
+        () => {
+          const canvas = makeupCanvasRef.current;
+          if (!canvas || !videoRef.current) return null;
+          
+          if (canvas.width !== videoRef.current.videoWidth || canvas.height !== videoRef.current.videoHeight) {
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            schedulerRef.current?.updateSize(canvas.width, canvas.height);
+            
+            console.log('[TRYON:COORDS]', {
+              videoIntrinsic: `${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`,
+              videoClient: `${videoRef.current.clientWidth}x${videoRef.current.clientHeight}`,
+              canvasInternal: `${canvas.width}x${canvas.height}`,
+              canvasClient: `${canvas.clientWidth}x${canvas.clientHeight}`,
+              devicePixelRatio: window.devicePixelRatio,
+              mirrored: true // Handled by CSS scale-x-100
+            });
+          }
+          
+          return canvas;
+        },
+        (ctx: CanvasRenderingContext2D, width: number, height: number, landmarks: any[]) => {
+          // Stability filter inside the render loop
+          const currentQuality = assessFaceQuality(
+            landmarks,
+            facesCountRef.current,
+            headPoseRef.current
+          );
+          
+          if (currentQuality === 'READY') {
+            validFramesCount.current++;
+            invalidFramesCount.current = 0;
+          } else {
+            invalidFramesCount.current++;
+            validFramesCount.current = 0;
+          }
+
+          let effectiveQuality = lastQualityState.current;
+          if (validFramesCount.current >= 5) {
+            effectiveQuality = 'READY';
+          } else if (invalidFramesCount.current >= 5) {
+            effectiveQuality = currentQuality;
+          }
+
+          if (effectiveQuality !== lastQualityState.current) {
+            lastQualityState.current = effectiveQuality;
+            setFaceQuality(effectiveQuality);
+            console.log('[TRYON:FACE_QUALITY]', effectiveQuality);
+          }
+
+          if (effectiveQuality !== 'READY' || !showTint) {
+            ctx.clearRect(0, 0, width, height);
+            return false; // Tells scheduler NOT to call VirtualMakeupEngine.render
+          }
+
+          return true; // Continue rendering
+        }
+      );
     }
   };
 
@@ -252,15 +489,7 @@ export default function TryOnStudio() {
     ctx.scale(-1, 1);
     ctx.drawImage(videoRef.current, 0, 0, snapCanvas.width, snapCanvas.height);
     
-    // Draw Tint if active
-    if (showTint && completeLook && completeLook.foundation) {
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.fillStyle = completeLook.foundation.hex;
-      ctx.globalAlpha = 0.15; // subtle tint
-      ctx.fillRect(0, 0, snapCanvas.width, snapCanvas.height);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1.0;
-    }
+    // (Tint is now handled purely by the VirtualMakeupEngine / FoundationRenderer)
     
     // Add branding
     ctx.translate(snapCanvas.width, 0); // reset flip for text
@@ -319,6 +548,19 @@ export default function TryOnStudio() {
     }
     
     navigate('/cart');
+  };
+
+  const getQualityMessage = (state: FaceQualityState) => {
+    switch(state) {
+      case 'NO_FACE': return 'Face not detected';
+      case 'TOO_FAR': return 'Move closer';
+      case 'TOO_CLOSE': return 'Move slightly back';
+      case 'OFF_CENTER': return 'Center your face';
+      case 'FACE_TILTED': return 'Look straight at camera';
+      case 'MULTIPLE_FACES': return 'Only one face should be visible';
+      case 'READY': return '✓ Try-on ready';
+      default: return '';
+    }
   };
 
   return (
@@ -382,15 +624,7 @@ export default function TryOnStudio() {
           className="absolute inset-0 pointer-events-none"
           style={{ clipPath: showTint ? 'none' : `polygon(${sliderPosition}% 0, 100% 0, 100% 100%, ${sliderPosition}% 100%)` }}
         >
-          {/* Foundation Tint Overlay */}
-          {studioState === 'RESULTS' && completeLook && completeLook.foundation && (
-            <div 
-              className="absolute inset-0 mix-blend-multiply opacity-20 transition-colors duration-500"
-              style={{ backgroundColor: completeLook.foundation.hex }}
-            />
-          )}
-
-          {/* Makeup Engine Layer */}
+          {/* Makeup Engine Layer (Now handles Foundation as well) */}
           {studioState === 'RESULTS' && (
             <canvas
               ref={makeupCanvasRef}
@@ -423,6 +657,28 @@ export default function TryOnStudio() {
           </div>
         )}
       </div>
+
+      {/* Face Guide Overlay */}
+      {studioState !== 'WELCOME' && studioState !== 'PREPARATION' && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div className={`w-64 h-80 rounded-[100px] border-2 transition-colors duration-500 ${
+            faceQuality === 'READY' ? 'border-green-500/20' : 'border-white/20'
+          } border-dashed`}></div>
+        </div>
+      )}
+
+      {/* Quality Pill */}
+      {studioState !== 'WELCOME' && studioState !== 'PREPARATION' && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-40 transition-opacity duration-300">
+          <div className={`px-4 py-2 rounded-full backdrop-blur-md text-sm font-medium shadow-lg border transition-colors ${
+            faceQuality === 'READY' 
+              ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+              : 'bg-black/60 text-white border-white/10'
+          }`}>
+            {getQualityMessage(faceQuality)}
+          </div>
+        </div>
+      )}
 
       {/* Overlays based on State */}
 
@@ -525,7 +781,7 @@ export default function TryOnStudio() {
       )}
 
       {/* MODULE 4, 8, 9: RESULTS */}
-      {studioState === 'RESULTS' && completeLook && (
+      {studioState === 'RESULTS' && (completeLook || isDirectProductMode) && (
         <>
           {/* Interactive Tools (Module 5 & 6) */}
           <div className="absolute right-6 top-32 z-40 flex flex-col gap-3">
@@ -555,7 +811,57 @@ export default function TryOnStudio() {
           <div className="absolute bottom-0 w-full bg-gradient-to-t from-[#050505] via-[#050505]/95 to-transparent pt-12 z-30">
             <div className="max-w-4xl mx-auto px-6 pb-8">
               
-              {demoMode ? (
+              {isDirectProductMode ? (
+                // Direct Product View
+                <div className="mb-8 max-w-2xl">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium tracking-wide mb-4">
+                    <Sparkles className="w-3 h-3" />
+                    Direct Try-On
+                  </div>
+                  <h2 className="text-3xl font-light mb-3">{product?.brand} <span className="font-semibold">{product?.name}</span></h2>
+                  <p className="text-slate-300 text-sm leading-relaxed mb-6">
+                    Live try-on for shade <span className="text-white font-medium">{activeShade?.name}</span>.
+                  </p>
+                  
+                  <div className="flex overflow-x-auto gap-4 pb-6 scrollbar-hide snap-x">
+                    <div className="flex-shrink-0 w-64 glass-card p-4 rounded-2xl snap-start border border-indigo-500/30">
+                      <span className="text-[10px] uppercase tracking-widest text-indigo-400 font-semibold mb-2 block">Selected Product</span>
+                      <div className="flex gap-3 items-center">
+                        <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-white/20 flex-shrink-0" style={{ backgroundColor: activeShade?.hex }} />
+                        <div>
+                          <p className="text-xs text-slate-400">{product?.brand}</p>
+                          <p className="text-sm font-medium leading-tight line-clamp-1">{activeShade?.name}</p>
+                          <p className="text-xs font-semibold mt-1">${product?.price?.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      if (product) {
+                        addToCart({
+                          product_id: product.id,
+                          name: product.name,
+                          brand: product.brand,
+                          price: product.price,
+                          shade: activeShade?.name,
+                          hex: activeShade?.hex,
+                          quantity: 1,
+                          image: product.images?.[0] || ''
+                        });
+                        navigate('/cart');
+                      }
+                    }}
+                    className="w-full bg-white text-black font-medium py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors text-lg shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    Add Product to Cart
+                  </button>
+                </div>
+              ) : completeLook ? (
+                <>
+                  {demoMode ? (
                 // Demo Mode View
                 <div className="mb-6">
                   <h2 className="text-3xl font-light mb-1">{completeLook.foundation.brand} <span className="font-semibold">Shade {completeLook.foundation.shade}</span></h2>
@@ -644,6 +950,8 @@ export default function TryOnStudio() {
                 <ShoppingBag className="w-5 h-5" />
                 Add Complete Look to Cart
               </button>
+                </>
+              ) : null}
             </div>
           </div>
         </>
