@@ -15,3 +15,8 @@ class Order(Base):
     total = Column(Float, nullable=False)
     shipping_address = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(Integer, index=True, nullable=True)
+    phone = Column(String, nullable=True)
+    payment_method = Column(String, default="COD", nullable=True)
+    currency = Column(String, default="INR", nullable=True)
+    status = Column(String, default="placed", nullable=True)

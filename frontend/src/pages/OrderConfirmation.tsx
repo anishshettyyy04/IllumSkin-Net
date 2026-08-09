@@ -4,6 +4,7 @@ import { CheckCircle2, ChevronRight, Package, Truck, Sparkles } from 'lucide-rea
 import { OrderService } from '../services/orders';
 import type { OrderRecord } from '../store/useStore';
 import toast from 'react-hot-toast';
+import { formatINR } from '../utils/currency';
 
 export default function OrderConfirmation() {
   const { id } = useParams<{ id: string }>();
@@ -77,13 +78,20 @@ export default function OrderConfirmation() {
           </div>
           <div>
             <h3 className="font-medium text-lg mb-1">Order Status</h3>
-            <p className="text-slate-300">{order.status}</p>
+            <p className="text-slate-300 capitalize">{order.status}</p>
           </div>
         </div>
       </div>
 
       <div className="w-full glass-card p-6 md:p-8 rounded-3xl border border-white/10 mb-10">
-        <h2 className="text-xl font-medium mb-6">Order Summary</h2>
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-medium">Order Summary</h2>
+            <div className="text-right">
+                <span className="text-sm text-slate-400 block">Payment Method</span>
+                <span className="font-medium text-indigo-400">Cash on Delivery</span>
+            </div>
+        </div>
+        
         <div className="space-y-4 mb-6">
           {order.items.map(item => (
             <div key={item.id} className="flex justify-between items-center text-sm">
@@ -101,13 +109,13 @@ export default function OrderConfirmation() {
                   <p className="text-slate-500 text-xs">Qty: {item.quantity}</p>
                 </div>
               </div>
-              <span className="font-medium text-white">${(item.price * item.quantity).toFixed(2)}</span>
+              <span className="font-medium text-white">{formatINR(item.price * item.quantity)}</span>
             </div>
           ))}
         </div>
         <div className="border-t border-white/10 pt-6 flex justify-between items-end">
-          <span className="text-lg text-slate-300">Total Paid</span>
-          <span className="text-3xl font-semibold">${order.total.toFixed(2)}</span>
+          <span className="text-lg text-slate-300">Amount</span>
+          <span className="text-3xl font-semibold">{formatINR(order.total)}</span>
         </div>
       </div>
 
@@ -119,10 +127,10 @@ export default function OrderConfirmation() {
           Continue Shopping <ChevronRight className="w-4 h-4" />
         </button>
         <button 
-          onClick={() => navigate('/profile')}
+          onClick={() => navigate('/')}
           className="glass-button px-8 py-3 rounded-xl border border-white/20 hover:bg-white/10 transition-colors"
         >
-          View Profile
+          Back to Home
         </button>
       </div>
 

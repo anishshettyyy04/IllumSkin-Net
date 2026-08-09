@@ -11,7 +11,7 @@ class OrderRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_order(self, payload: OrderCreatePayload) -> Order:
+    def create_order(self, payload: OrderCreatePayload, email: str, user_id: int, subtotal: float, shipping: float, discount: float, total: float, currency: str = "INR", payment_method: str = "COD") -> Order:
         # Generate unique order ID
         timestamp = int(time.time() * 1000)
         random_suffix = random.randint(100, 999)
@@ -22,14 +22,19 @@ class OrderRepository:
         
         db_order = Order(
             id=order_id,
-            email=payload.email,
+            user_id=user_id,
+            email=email,
             name=payload.name,
+            phone=payload.phone,
             items=items_dict,
-            subtotal=payload.subtotal,
-            shipping=payload.shipping,
-            discount=payload.discount,
-            total=payload.total,
-            shipping_address=payload.shipping_address
+            subtotal=subtotal,
+            shipping=shipping,
+            discount=discount,
+            total=total,
+            shipping_address=payload.shipping_address,
+            currency=currency,
+            payment_method=payment_method,
+            status="placed"
         )
         self.db.add(db_order)
         self.db.commit()
@@ -39,8 +44,8 @@ class OrderRepository:
     def get_order_by_id(self, order_id: str) -> Optional[Order]:
         return self.db.query(Order).filter(Order.id == order_id).first()
 
-    def get_orders_by_user_email(self, email: str) -> List[Order]:
-        return self.db.query(Order).filter(func.lower(Order.email) == email.lower()).order_by(Order.created_at.desc()).all()
+    def get_orders_by_user_id(self, user_id: int) -> List[Order]:
+        return self.db.query(Order).filter(Order.user_id == user_id).order_by(Order.created_at.desc()).all()
 
     @staticmethod
     def to_order_record(order: Order) -> OrderRecord:
@@ -53,8 +58,11 @@ class OrderRepository:
             shipping=order.shipping,
             discount=order.discount,
             total=order.total,
-            status="processing",
+            status=order.status or "placed",
             shippingAddress=order.shipping_address,
             email=order.email,
-            name=order.name
+            name=order.name,
+            phone=order.phone,
+            paymentMethod=order.payment_method or "COD",
+            currency=order.currency or "INR"
         )

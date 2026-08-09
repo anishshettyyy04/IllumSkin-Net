@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Camera, ShoppingBag, Activity, ShieldAlert, CheckCircle2, Circle, ShieldCheck, Sparkles, Download, SplitSquareHorizontal } from 'lucide-react';
+import { formatINR } from '../utils/currency';
 import { RecommendationService } from '../services/recommendations';
 import type { CompleteLook } from '../services/recommendations';
 import { useStore } from '../store/useStore';
@@ -831,7 +832,7 @@ export default function TryOnStudio() {
                         <div>
                           <p className="text-xs text-slate-400">{product?.brand}</p>
                           <p className="text-sm font-medium leading-tight line-clamp-1">{activeShade?.name}</p>
-                          <p className="text-xs font-semibold mt-1">${product?.price?.toFixed(2)}</p>
+                          <p className="text-xs font-semibold mt-1">{formatINR(product?.price)}</p>
                         </div>
                       </div>
                     </div>
@@ -906,7 +907,7 @@ export default function TryOnStudio() {
                     <div>
                       <p className="text-xs text-slate-400">{completeLook.foundation.brand}</p>
                       <p className="text-sm font-medium leading-tight line-clamp-1">{completeLook.foundation.shade}</p>
-                      <p className="text-xs font-semibold mt-1">${completeLook.foundation.price.toFixed(2)}</p>
+                      <p className="text-xs font-semibold mt-1">{formatINR(completeLook.foundation.price)}</p>
                     </div>
                   </div>
                 </div>
@@ -920,7 +921,7 @@ export default function TryOnStudio() {
                       <div>
                         <p className="text-xs text-slate-400">{completeLook.lipstick.brand}</p>
                         <p className="text-sm font-medium leading-tight line-clamp-1">{completeLook.lipstick.name}</p>
-                        <p className="text-xs font-semibold mt-1">${completeLook.lipstick.price.toFixed(2)}</p>
+                        <p className="text-xs font-semibold mt-1">{formatINR(completeLook.lipstick.price)}</p>
                       </div>
                     </div>
                   </div>
@@ -935,7 +936,7 @@ export default function TryOnStudio() {
                       <div>
                         <p className="text-xs text-slate-400">{completeLook.blush.brand}</p>
                         <p className="text-sm font-medium leading-tight line-clamp-1">{completeLook.blush.name}</p>
-                        <p className="text-xs font-semibold mt-1">${completeLook.blush.price.toFixed(2)}</p>
+                        <p className="text-xs font-semibold mt-1">{formatINR(completeLook.blush.price)}</p>
                       </div>
                     </div>
                   </div>

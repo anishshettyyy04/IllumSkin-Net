@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Filter } from 'lucide-react';
+import { formatINR } from '../utils/currency';
 
 const mockProducts = [
   { id: 1, brand: 'Fenty Beauty', name: "Pro Filt'r Soft Matte", price: 40, hex: '#EED8C4', shade: '100' },
@@ -65,7 +66,7 @@ export default function ProductListing() {
               <h3 className="font-medium text-lg leading-tight">{p.name}</h3>
               <div className="flex items-center justify-between pt-2">
                 <p className="text-sm text-slate-400">Shade: {p.shade}</p>
-                <p className="font-semibold">${p.price}</p>
+                <p className="font-semibold">{formatINR(p.price)}</p>
               </div>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { ProductService } from '../services/products';
 import type { ProductDetail, ProductBase } from '../services/products';
 import { useStore } from '../store/useStore';
 import { ChevronRight, Star, Heart, Share2, Camera, ShoppingBag, Sparkles, AlertCircle } from 'lucide-react';
+import { formatINR } from '../utils/currency';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -193,9 +194,9 @@ export default function ProductDetailPage() {
 
             <div className="flex items-end gap-3 mb-8">
               {product.discount && (
-                <span className="text-lg text-slate-500 line-through mb-1">${(product.price / (1 - product.discount/100)).toFixed(2)}</span>
+                <span className="text-lg text-slate-500 line-through mb-1">{formatINR(product.price / (1 - product.discount/100))}</span>
               )}
-              <span className="text-4xl font-medium">${product.price.toFixed(2)}</span>
+              <span className="text-4xl font-medium">{formatINR(product.price)}</span>
             </div>
 
             {product.highlights && (
@@ -266,7 +267,7 @@ export default function ProductDetailPage() {
                 className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-4 rounded-full flex items-center justify-center gap-2 transition-colors"
               >
                 <ShoppingBag className="w-5 h-5" />
-                <span className="text-base">Add to Cart - ${product.price.toFixed(2)}</span>
+                <span className="text-base">Add to Cart - {formatINR(product.price)}</span>
               </button>
             </div>
 

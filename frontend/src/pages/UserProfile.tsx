@@ -1,13 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Package, Sparkles, ChevronRight, Calendar, ShoppingBag, Trash2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { OrderService } from '../services/orders';
 import toast from 'react-hot-toast';
+import { formatINR } from '../utils/currency';
 
 export default function UserProfile() {
   const navigate = useNavigate();
-  const { savedLooks, orderHistory, removeLook, addToCart } = useStore();
+  const { savedLooks, removeLook, addToCart } = useStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'looks' | 'orders'>('looks');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    if (activeTab === 'orders') {
+      setLoadingOrders(true);
+      OrderService.getUserOrders()
+        .then(data => {
+            setOrders(data);
+        })
+        .catch(() => {
+            toast.error("Failed to load order history");
+        })
+        .finally(() => {
+            setLoadingOrders(false);
+        });
+    }
+  }, [activeTab, isAuthenticated, navigate]);
 
   const handleAddLookToCart = (look: any) => {
     // Generate a new bundle ID
@@ -29,6 +56,8 @@ export default function UserProfile() {
     toast.success('Look removed');
   };
 
+  if (!isAuthenticated || !user) return null;
+
   return (
     <div className="min-h-screen p-6 md:p-12 max-w-6xl mx-auto flex flex-col bg-[#050505] text-white pt-24">
       
@@ -39,7 +68,7 @@ export default function UserProfile() {
         </div>
         <div>
           <h1 className="text-3xl font-light">My <span className="font-semibold text-indigo-400">Profile</span></h1>
-          <p className="text-slate-400">Manage your saved AI looks and view order history.</p>
+          <p className="text-slate-400">{user.username} • {user.email}</p>
         </div>
       </div>
 
@@ -131,7 +160,11 @@ export default function UserProfile() {
         {/* Order History Tab */}
         {activeTab === 'orders' && (
           <div className="space-y-6">
-            {orderHistory.length === 0 ? (
+            {loadingOrders ? (
+              <div className="flex justify-center p-12">
+                <div className="w-8 h-8 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+              </div>
+            ) : orders.length === 0 ? (
               <div className="glass-card p-12 flex flex-col items-center justify-center text-center border border-white/10 rounded-3xl">
                 <Package className="w-12 h-12 text-slate-700 mb-4" />
                 <h3 className="text-xl font-medium mb-2">No Orders Yet</h3>
@@ -142,17 +175,20 @@ export default function UserProfile() {
               </div>
             ) : (
               <div className="space-y-6">
-                {orderHistory.map(order => (
+                {orders.map(order => (
                   <div key={order.id} className="glass-card rounded-2xl border border-white/10 p-6 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-semibold text-lg text-white">{order.id}</span>
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 capitalize">
                           {order.status}
                         </span>
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                          {order.paymentMethod || 'COD'}
+                        </span>
                       </div>
-                      <p className="text-sm text-slate-400 mb-1">Placed on {new Date(order.created_at).toLocaleDateString()}</p>
-                      <p className="text-sm text-slate-300">{order.items.reduce((sum, item) => sum + item.quantity, 0)} items • ${order.total.toFixed(2)}</p>
+                      <p className="text-sm text-slate-400 mb-1">Placed on {new Date(order.date || order.created_at).toLocaleDateString()}</p>
+                      <p className="text-sm text-slate-300">{order.items?.reduce((sum: any, item: any) => sum + item.quantity, 0) || 0} items • {formatINR(order.total)}</p>
                     </div>
                     
                     <button 

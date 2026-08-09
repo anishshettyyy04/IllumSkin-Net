@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, Camera, ShoppingBag, ShieldAlert } from 'lucide-react';
+import { formatINR } from '../utils/currency';
 
 // Generate some dynamic dummy swatches based on category
 const getDummySwatches = (category: string) => {
@@ -111,7 +112,7 @@ export default function LegacyStudio() {
               className="bg-white text-black hover:bg-slate-200 transition-colors px-8 py-3 rounded-full flex items-center gap-2"
             >
               <ShoppingBag className="w-5 h-5" />
-              <span className="font-medium">Add to Cart - ${selectedSwatch.price}</span>
+              <span className="font-medium">Add to Cart - {formatINR(selectedSwatch.price)}</span>
             </button>
           )}
         </div>

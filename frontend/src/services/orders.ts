@@ -3,13 +3,9 @@ import type { CartItem, OrderRecord } from '../store/useStore';
 
 export interface OrderCreatePayload {
   items: CartItem[];
-  subtotal: number;
-  shipping: number;
-  discount: number;
-  total: number;
   shipping_address: string;
-  email: string;
   name: string;
+  phone: string;
 }
 
 export const OrderService = {
@@ -26,8 +22,8 @@ export const OrderService = {
     return response.data;
   },
 
-  getUserOrders: async (email: string): Promise<OrderRecord[]> => {
-    const response = await fetchApi<OrderRecord[]>(`/orders/user/${email}`);
+  getUserOrders: async (): Promise<OrderRecord[]> => {
+    const response = await fetchApi<OrderRecord[]>(`/orders/my`);
     return response.data;
   }
 };

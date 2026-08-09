@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Heart, Eye, ShoppingBag, Sparkles, Star } from 'lucide-react';
+import { formatINR } from '../utils/currency';
 
 interface ProductCardProps {
   id: number | string;
@@ -113,10 +114,10 @@ const ProductCard = memo(({ id, brand, name, price, hex, shade, category, rating
             </div>
           </div>
           <div className="flex flex-col items-end">
-            {discount && (
-              <span className="text-xs text-slate-500 line-through mb-0.5">${(price / (1 - discount/100)).toFixed(2)}</span>
-            )}
-            <p className="font-semibold text-lg text-white leading-none">${price.toFixed(2)}</p>
+            {discount && discount > 0 ? (
+              <span className="text-xs text-slate-500 line-through mb-0.5">{formatINR(price / (1 - discount/100))}</span>
+            ) : null}
+            <p className="font-semibold text-lg text-white leading-none">{formatINR(price)}</p>
           </div>
         </div>
       </div>

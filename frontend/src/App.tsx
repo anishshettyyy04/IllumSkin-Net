@@ -12,10 +12,13 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
 import UserProfile from './pages/UserProfile';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1234567890-mockclientid.apps.googleusercontent.com';
 
 function App() {
   return (
-    <>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Toaster 
         position="top-center" 
         toastOptions={{
@@ -43,7 +46,7 @@ function App() {
           <Route path="/profile" element={<UserProfile />} />
         </Routes>
       </BrowserRouter>
-    </>
+    </GoogleOAuthProvider>
   );
 }
 

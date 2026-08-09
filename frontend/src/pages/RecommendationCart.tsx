@@ -4,6 +4,7 @@ import { ChevronLeft, Check, Sparkles, ShoppingBag, Trash2, Minus, Plus, Chevron
 import { useStore } from '../store/useStore';
 import type { CartItem } from '../store/useStore';
 import toast from 'react-hot-toast';
+import { formatINR } from '../utils/currency';
 
 export default function RecommendationCart() {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ export default function RecommendationCart() {
                       <p className="text-sm text-slate-300">Complete AI-Curated Look (Based on your Albedo Map)</p>
                     </div>
                     <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                      <span className="font-semibold text-lg">${bundleTotal.toFixed(2)}</span>
+                      <span className="font-semibold text-lg">{formatINR(bundleTotal)}</span>
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={() => removeBundle(bundleId)}
@@ -175,25 +176,25 @@ export default function RecommendationCart() {
               <div className="space-y-4 text-slate-300 mb-6">
                 <div className="flex justify-between">
                   <span>Subtotal ({cart.reduce((a,b)=>a+b.quantity,0)} items)</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatINR(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span className={shipping === 0 ? "text-green-400" : ""}>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                  <span className={shipping === 0 ? "text-green-400" : ""}>{shipping === 0 ? "Free" : formatINR(shipping)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between">
                     <span className="flex items-center gap-1 text-indigo-300">
                       <Sparkles className="w-3 h-3" /> AI Bundle Discount
                     </span>
-                    <span className="text-green-400">-${discount.toFixed(2)}</span>
+                    <span className="text-green-400">-{formatINR(discount)}</span>
                   </div>
                 )}
               </div>
               
               <div className="border-t border-white/10 pt-6 mb-8 flex justify-between items-end">
                 <span className="text-lg">Total</span>
-                <span className="text-3xl font-semibold">${total.toFixed(2)}</span>
+                <span className="text-3xl font-semibold">{formatINR(total)}</span>
               </div>
 
               <button 
@@ -250,7 +251,7 @@ function CartItemRow({ item, updateQuantity, removeFromCart }: {
           </button>
         </div>
         
-        <div className="text-xl font-semibold w-20 text-right" aria-label={`Price: $${(item.price * item.quantity).toFixed(2)}`}>${(item.price * item.quantity).toFixed(2)}</div>
+        <div className="text-xl font-semibold w-24 text-right" aria-label={`Price: ${formatINR(item.price * item.quantity)}`}>{formatINR(item.price * item.quantity)}</div>
         
         <button 
           onClick={() => removeFromCart(item.id)}

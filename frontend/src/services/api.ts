@@ -9,10 +9,17 @@ export interface APIResponse<T> {
 
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {
+    const token = localStorage.getItem('illumskin_token');
+    const authHeaders: any = {};
+    if (token) {
+      authHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...options?.headers,
       },
     });

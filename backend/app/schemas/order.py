@@ -18,13 +18,9 @@ class CartItemSchema(BaseModel):
 
 class OrderCreatePayload(BaseModel):
     items: List[CartItemSchema]
-    subtotal: float
-    shipping: float
-    discount: float = 0.0
-    total: float
     shipping_address: str
-    email: str
     name: str
+    phone: str
 
 class OrderRecord(BaseModel):
     id: str
@@ -38,3 +34,6 @@ class OrderRecord(BaseModel):
     shippingAddress: str
     email: str
     name: str
+    phone: Optional[str] = None
+    paymentMethod: str = "COD"
+    currency: str = "INR"
