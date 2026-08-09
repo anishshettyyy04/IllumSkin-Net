@@ -30,6 +30,7 @@ export function useFaceMesh(videoRef: React.RefObject<HTMLVideoElement | null>) 
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
   const requestRef = useRef<number>(0);
   const lastVideoTimeRef = useRef<number>(-1);
+  const lastInferenceTimestampRef = useRef<number>(-1);
   const fpsFrameCountRef = useRef<number>(0);
   const fpsLastTimeRef = useRef<number>(performance.now());
   const lightingCheckTimeRef = useRef<number>(0);
@@ -118,8 +119,14 @@ export function useFaceMesh(videoRef: React.RefObject<HTMLVideoElement | null>) 
     if (!landmarkerRef.current || !videoRef.current) return;
     
     const video = videoRef.current;
+
     
     if (video.readyState >= 2) {
+      if (!(window as any).__FACE_VIDEO_READY_LOGGED) {
+        console.log(`[FACE:VIDEO_READY] Video is ready. dims: ${video.videoWidth}x${video.videoHeight}, time: ${video.currentTime}`);
+        (window as any).__FACE_VIDEO_READY_LOGGED = true;
+      }
+      
       const loopStart = performance.now();
       
       // Calculate FPS
@@ -131,18 +138,31 @@ export function useFaceMesh(videoRef: React.RefObject<HTMLVideoElement | null>) 
       }
 
       if (video.currentTime !== lastVideoTimeRef.current) {
+        console.log(`[FACE:FRAME] processing frame at ${video.currentTime}`);
         lastVideoTimeRef.current = video.currentTime;
         
         try {
-          const inferenceStart = performance.now();
-          const results = landmarkerRef.current.detectForVideo(video, inferenceStart);
-          const processingTime = performance.now() - inferenceStart;
+          const videoTimestamp = video.currentTime * 1000;
+          const inferenceTimestamp = Math.max(
+            videoTimestamp,
+            lastInferenceTimestampRef.current + 1
+          );
+          
+          const timestampDelta = inferenceTimestamp - lastInferenceTimestampRef.current;
+          console.log(`[FACE:TIMESTAMP] video.currentTime=${video.currentTime.toFixed(4)}, inferenceTimestamp=${inferenceTimestamp}, timestampDelta=${timestampDelta}`);
+          lastInferenceTimestampRef.current = inferenceTimestamp;
+
+          const perfStart = performance.now();
+          const results = landmarkerRef.current.detectForVideo(video, inferenceTimestamp);
+          const processingTime = performance.now() - perfStart;
           
           const facesCount = results.faceLandmarks ? results.faceLandmarks.length : 0;
+          console.log(`[FACE:RESULT] faceCount=${facesCount}`);
           const faceDetected = facesCount > 0;
           const landmarks = faceDetected ? results.faceLandmarks[0] : null;
 
           if (landmarks) {
+            console.log(`[FACE:LANDMARKS] landmarkCount=${landmarks.length}`);
             const headPose = calculateHeadPose(landmarks);
             const faceScaling = calculateFaceScaling(landmarks);
             const stabilityScore = stabilityTrackerRef.current.update(landmarks);
@@ -178,6 +198,13 @@ export function useFaceMesh(videoRef: React.RefObject<HTMLVideoElement | null>) 
               else if (!faceDetected) captureQuality = 'Lost';
 
               const captureReady = captureScore >= 82;
+
+              console.log(`[FACE:QUALITY] captureScore: ${captureScore}, captureQuality: ${captureQuality}`);
+              if (!captureReady) {
+                console.log(`[FACE:REJECT] score < 82`);
+              } else {
+                console.log(`[FACE:SUCCESS] face accepted`);
+              }
 
               return {
                 ...prev,
