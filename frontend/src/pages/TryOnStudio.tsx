@@ -609,30 +609,33 @@ export default function TryOnStudio() {
         </div>
       </div>
 
-      {/* Main Video Layer */}
-      <div className="absolute inset-0 bg-[#050505]">
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          playsInline 
-          muted 
-          className="absolute min-w-full min-h-full object-cover transform -scale-x-100" 
-        />
-        <canvas ref={canvasRef} width="256" height="256" className="hidden" />
+      {/* Main Video & Dynamic Layout Layer */}
+      <div className="flex-1 flex flex-col lg:block relative h-full w-full mt-20 lg:mt-0">
         
-        {/* Beauty Overlays Container */}
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{ clipPath: showTint ? 'none' : `polygon(${sliderPosition}% 0, 100% 0, 100% 100%, ${sliderPosition}% 100%)` }}
-        >
-          {/* Makeup Engine Layer (Now handles Foundation as well) */}
-          {studioState === 'RESULTS' && (
-            <canvas
-              ref={makeupCanvasRef}
-              className="absolute min-w-full min-h-full object-cover transform -scale-x-100"
-            />
-          )}
-        </div>
+        {/* Camera Container */}
+        <div className="relative w-full h-[55vh] lg:h-full lg:absolute lg:inset-0 bg-[#050505] overflow-hidden shrink-0">
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted 
+            className="absolute inset-0 w-full h-full object-cover transform -scale-x-100" 
+          />
+          <canvas ref={canvasRef} width="256" height="256" className="hidden" />
+          
+          {/* Beauty Overlays Container */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{ clipPath: showTint ? 'none' : `polygon(${sliderPosition}% 0, 100% 0, 100% 100%, ${sliderPosition}% 100%)` }}
+          >
+            {/* Makeup Engine Layer (Now handles Foundation as well) */}
+            {studioState === 'RESULTS' && (
+              <canvas
+                ref={makeupCanvasRef}
+                className="absolute inset-0 w-full h-full object-cover transform -scale-x-100"
+              />
+            )}
+          </div>
 
         {/* Before/After Slider UI */}
         {studioState === 'RESULTS' && !showTint && (
@@ -657,20 +660,19 @@ export default function TryOnStudio() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Face Guide Overlay */}
-      {studioState !== 'WELCOME' && studioState !== 'PREPARATION' && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <div className={`w-64 h-80 rounded-[100px] border-2 transition-colors duration-500 ${
-            faceQuality === 'READY' ? 'border-green-500/20' : 'border-white/20'
-          } border-dashed`}></div>
-        </div>
-      )}
+        {/* Face Guide Overlay */}
+        {studioState !== 'WELCOME' && studioState !== 'PREPARATION' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <div className={`w-56 h-72 md:w-64 md:h-80 rounded-[100px] border-2 transition-colors duration-500 ${
+              faceQuality === 'READY' ? 'border-green-500/20' : 'border-white/20'
+            } border-dashed`}></div>
+          </div>
+        )}
+        </div> {/* End Camera Container */}
 
       {/* Quality Pill */}
       {studioState !== 'WELCOME' && studioState !== 'PREPARATION' && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-40 transition-opacity duration-300">
+        <div className="absolute top-4 lg:top-24 left-1/2 -translate-x-1/2 z-40 transition-opacity duration-300">
           <div className={`px-4 py-2 rounded-full backdrop-blur-md text-sm font-medium shadow-lg border transition-colors ${
             faceQuality === 'READY' 
               ? 'bg-green-500/20 text-green-300 border-green-500/30' 
@@ -785,14 +787,14 @@ export default function TryOnStudio() {
       {studioState === 'RESULTS' && (completeLook || isDirectProductMode) && (
         <>
           {/* Interactive Tools (Module 5 & 6) */}
-          <div className="absolute right-6 top-32 z-40 flex flex-col gap-3">
+          <div className="absolute right-4 top-24 lg:right-6 lg:top-32 z-40 flex flex-col gap-3">
             <button 
               onClick={() => setShowTint(!showTint)}
-              className="w-12 h-12 rounded-full glass-card flex items-center justify-center hover:bg-white/10 transition-colors tooltip-trigger group"
+              className="w-10 h-10 lg:w-12 lg:h-12 rounded-full glass-card flex items-center justify-center hover:bg-white/10 transition-colors tooltip-trigger group"
               aria-label="Toggle Before/After Comparison"
             >
-              {showTint ? <SplitSquareHorizontal className="w-5 h-5 text-indigo-300" /> : <SplitSquareHorizontal className="w-5 h-5 text-slate-400" />}
-              <span className="absolute right-14 bg-black/80 px-3 py-1.5 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+              {showTint ? <SplitSquareHorizontal className="w-4 h-4 lg:w-5 lg:h-5 text-indigo-300" /> : <SplitSquareHorizontal className="w-4 h-4 lg:w-5 lg:h-5 text-slate-400" />}
+              <span className="absolute right-14 bg-black/80 px-3 py-1.5 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity hidden lg:block">
                 {showTint ? 'Show Original' : 'Show AI Tint'}
               </span>
             </button>
@@ -809,8 +811,8 @@ export default function TryOnStudio() {
           </div>
 
           {/* Bottom Recommendation Sheet */}
-          <div className="absolute bottom-0 w-full bg-gradient-to-t from-[#050505] via-[#050505]/95 to-transparent pt-12 z-30">
-            <div className="max-w-4xl mx-auto px-6 pb-8">
+          <div className="flex-1 w-full bg-[#050505] lg:absolute lg:bottom-0 lg:bg-gradient-to-t lg:from-[#050505] lg:via-[#050505]/95 lg:to-transparent lg:pt-12 z-30 overflow-y-auto overflow-x-hidden">
+            <div className="max-w-4xl mx-auto px-6 py-6 lg:pb-8">
               
               {isDirectProductMode ? (
                 // Direct Product View
@@ -967,6 +969,8 @@ export default function TryOnStudio() {
           <button onClick={() => navigate('/shop')} className="glass-button px-8 py-3 rounded-full">Return to Shop</button>
         </div>
       )}
+      
+      </div> {/* End Main Video & Dynamic Layout Layer */}
     </div>
   );
 }
