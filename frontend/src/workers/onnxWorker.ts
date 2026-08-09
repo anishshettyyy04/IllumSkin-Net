@@ -7,6 +7,7 @@ ort.env.wasm.wasmPaths = {
   wasm: wasmUrl,
   mjs: mjsUrl
 };
+ort.env.wasm.numThreads = 1; // Force single thread to prevent SAB deadlock in Vercel
 
 let session: ort.InferenceSession | null = null;
 let lastLogTime = 0;
