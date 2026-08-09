@@ -55,6 +55,8 @@ export class VirtualMakeupEngine {
   }
 
   public applyPreset(preset: CosmeticPreset) {
+    this.clearAllRenderers();
+    
     this.state.preset = preset;
     this.state.globalOpacity = preset.opacity !== undefined ? preset.opacity : 1.0;
     this.state.globalIntensity = preset.intensity !== undefined ? preset.intensity : 1.0;
@@ -62,6 +64,13 @@ export class VirtualMakeupEngine {
     // Notify all active renderers of the preset change
     for (const { renderer } of this.state.activeRenderers.values()) {
       renderer.onPresetChanged(preset);
+    }
+  }
+
+  public clearAllRenderers() {
+    this.state.preset = null;
+    for (const { renderer } of this.state.activeRenderers.values()) {
+      renderer.reset();
     }
   }
 
@@ -168,6 +177,24 @@ export class VirtualMakeupEngine {
     if (!this.state.preset) return null;
     
     const intensity = this.state.globalIntensity;
+
+    if (id === 'Foundation' && this.state.preset.foundation) {
+      const productOpacity = this.state.preset.foundation.opacity ?? 0.35;
+      
+      console.log('[TRYON:FOUNDATION:COVERAGE]', {
+        product: this.state.preset.foundation.shade || 'Unknown Foundation',
+        productOpacity,
+        styleIntensity: intensity,
+        appliedStrength: productOpacity, // Dedicated coverage path
+        source: 'Foundation-specific coverage policy'
+      });
+      
+      return {
+        hex: this.state.preset.foundation.hex,
+        opacity: productOpacity,
+        compositeMode: (this.state.preset.foundation as any).compositeMode
+      };
+    }
 
     if (id === 'Lip' && this.state.preset.lipstick) {
       const cfg = this.state.preset.lipstick;

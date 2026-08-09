@@ -15,16 +15,32 @@ export class RenderScheduler {
 
   public startLoop(
     getLandmarks: () => NormalizedLandmark[] | null | undefined,
-    getCanvas: () => HTMLCanvasElement | null | undefined
+    getCanvas: () => HTMLCanvasElement | null | undefined,
+    onBeforeRender?: (ctx: CanvasRenderingContext2D, width: number, height: number, landmarks: NormalizedLandmark[]) => boolean
   ) {
     if (this.animationFrameId !== null) return; // already running
 
     let cachedCanvas: HTMLCanvasElement | null = null;
     let cachedCtx: CanvasRenderingContext2D | null = null;
+    let lastLogTime = 0;
 
     const loop = () => {
       const landmarks = getLandmarks();
       const canvas = getCanvas();
+      
+      const now = Date.now();
+      if (landmarks && now - lastLogTime > 1000) {
+        lastLogTime = now;
+        console.log('[TRYON:LANDMARK_FRAME]', {
+          facesCount: landmarks ? 1 : 0, // Since landmarks passed here are for the first face (if present), or we can just log what we have
+          landmarkCount: landmarks ? landmarks.length : 0,
+          timestamp: now,
+          upperLipPoint: landmarks ? landmarks[13] : null,
+          lowerLipPoint: landmarks ? landmarks[14] : null,
+          leftMouthCorner: landmarks ? landmarks[61] : null,
+          rightMouthCorner: landmarks ? landmarks[291] : null
+        });
+      }
       
       if (canvas) {
         if (canvas !== cachedCanvas) {
@@ -35,7 +51,13 @@ export class RenderScheduler {
         if (cachedCtx) {
           cachedCtx.clearRect(0, 0, cachedCtx.canvas.width, cachedCtx.canvas.height);
           if (landmarks) {
-            this.renderAll(cachedCtx, landmarks);
+            let shouldRender = true;
+            if (onBeforeRender) {
+              shouldRender = onBeforeRender(cachedCtx, cachedCtx.canvas.width, cachedCtx.canvas.height, landmarks);
+            }
+            if (shouldRender) {
+              this.renderAll(cachedCtx, landmarks);
+            }
           }
         }
       }

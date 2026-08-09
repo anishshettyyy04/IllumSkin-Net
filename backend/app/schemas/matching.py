@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class MatchRequest(BaseModel):
     user_albedo: List[float] = Field(
@@ -19,6 +19,7 @@ class ProductMatch(BaseModel):
     hex_code: str
     price: float
     match_percentage: float
+    delta_e00: Optional[float] = None
 
 class MatchResponse(BaseModel):
     matches: List[ProductMatch]

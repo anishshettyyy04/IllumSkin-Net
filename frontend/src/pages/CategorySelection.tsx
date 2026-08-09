@@ -30,7 +30,7 @@ export default function CategorySelection() {
         {categories.map((cat) => (
           <div 
             key={cat.id}
-            onClick={() => cat.id === 'foundation' ? navigate('/products') : navigate('/legacy-studio', { state: { category: cat.title } })}
+            onClick={() => cat.id === 'foundation' ? navigate('/products') : navigate('/studio', { state: { category: cat.title } })}
             className={`group relative overflow-hidden rounded-2xl cursor-pointer h-80`}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10 transition-opacity group-hover:from-indigo-900/90"></div>

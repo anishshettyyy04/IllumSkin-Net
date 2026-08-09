@@ -41,7 +41,7 @@ export class LookGenerator {
       name: styleDef.name,
       opacity: 1.0,
       intensity: styleDef.baseIntensity,
-      foundation: { shade: foundationId, undertone, renderer: null }
+      foundation: { shade: foundationId, undertone, hex: getShadeById(foundationId)?.hex || '#FFFFFF', renderer: null }
     };
 
     if (undertone === 'Warm') {

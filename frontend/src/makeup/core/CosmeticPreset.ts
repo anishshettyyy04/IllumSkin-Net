@@ -19,6 +19,8 @@ export interface EyeShadowConfig extends BaseCosmeticConfig {
 export interface FoundationConfig {
   shade: string;
   undertone: string;
+  hex: string;
+  opacity?: number;
   renderer: null; // Placeholder for Sprint 8.7+
 }
 

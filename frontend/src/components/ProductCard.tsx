@@ -23,7 +23,7 @@ const ProductCard = memo(({ id, brand, name, price, hex, shade, category, rating
     if (category.toLowerCase() === 'foundation') {
       navigate('/studio');
     } else {
-      navigate('/legacy-studio', { state: { category } });
+      navigate('/studio', { state: { product: { id, brand, name, price, hex, shade, category, rating, reviews, discount }, activeShade: { hex, name: shade }, category } });
     }
   };
 

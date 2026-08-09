@@ -23,6 +23,14 @@ export class BlendEngine {
     const finalOpacity = options.opacity ?? shade.opacity ?? LipRendererConfig.defaultOpacity;
     const finish = shade.finish;
 
+    console.log('[TRYON:RENDERER:COLOR]', {
+      hex: shade.hex,
+      rgba: hexToRgbaString(shade.hex, finalOpacity),
+      opacity: finalOpacity,
+      finish: finish,
+      compositeOperation: 'source-in'
+    });
+
     // Apply base color to the mask
     ctx.globalCompositeOperation = 'source-in';
     

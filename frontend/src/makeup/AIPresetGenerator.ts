@@ -13,6 +13,7 @@ export class AIPresetGenerator {
       foundation: {
         shade: foundationShadeId,
         undertone: undertone,
+        hex: getShadeById(foundationShadeId)?.hex || '#FFFFFF',
         renderer: null
       }
     };

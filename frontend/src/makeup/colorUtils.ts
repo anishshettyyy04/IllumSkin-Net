@@ -24,7 +24,10 @@ export const rgbToRgbaString = (r: number, g: number, b: number, a: number): str
  */
 export const hexToRgbaString = (hex: string, alpha: number): string => {
   const rgb = hexToRgb(hex);
-  if (!rgb) return `rgba(255, 255, 255, ${alpha})`;
+  if (!rgb) {
+    console.error(`[TRYON:COLOR:ERROR] Invalid HEX code received: "${hex}". Cannot compute RGBA.`);
+    throw new Error(`Invalid HEX color code: ${hex}`);
+  }
   return rgbToRgbaString(rgb.r, rgb.g, rgb.b, alpha);
 };
 

@@ -92,9 +92,9 @@ export default function ProductDetailPage() {
 
   const handleTryOn = () => {
     if (product.category.toLowerCase() === 'foundation') {
-      navigate('/studio');
+      navigate('/studio', { state: { product, activeShade } });
     } else {
-      navigate('/legacy-studio', { state: { category: product.category } });
+      navigate('/studio', { state: { product, activeShade } });
     }
   };
 
