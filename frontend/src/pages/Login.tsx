@@ -29,10 +29,20 @@ export default function Login() {
       );
   };
 
+  const getErrorMessage = (errorMsg: string) => {
+    if (errorMsg.includes('401')) return "Invalid email or password.";
+    if (errorMsg.includes('404')) return "Authentication service is temporarily unavailable.\nPlease try again.";
+    if (errorMsg.includes('409')) return "An account with this email already exists.";
+    if (errorMsg.includes('500')) return "Something went wrong on the server. Please try again.";
+    if (errorMsg.toLowerCase().includes('failed to fetch') || errorMsg.toLowerCase().includes('network')) {
+      return "Unable to connect to IllumSkin-Net.";
+    }
+    return errorMsg;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (!email || !password) {
       toast.error('Email and password are required');
       return;
@@ -62,23 +72,20 @@ export default function Login() {
 
     try {
       const endpoint = isRegister ? '/auth/register' : '/auth/login';
-      const body = isRegister 
-        ? { email, password, username } 
+      const body = isRegister
+        ? { email, password, username }
         : { email, password };
-        
+
       const response: any = await fetchApi<any>(endpoint, {
         method: 'POST',
         body: JSON.stringify(body)
       });
-      
-      // Some APIs might not return JWT on register, but this specific one does.
-      // If it didn't, we would automatically log in here by calling /auth/login
+
       if (response.access_token && response.user) {
         login(response.user, response.access_token);
         toast.success(isRegister ? 'Account created successfully!' : 'Welcome back!');
         navigate(from, { replace: true });
       } else {
-        // Fallback if backend suddenly stops sending token on register
         if (isRegister) {
            const loginRes: any = await fetchApi<any>('/auth/login', {
              method: 'POST',
@@ -92,112 +99,135 @@ export default function Login() {
         }
       }
     } catch (error: any) {
-      toast.error(error.message || 'Authentication failed. Please check your credentials.');
+      const displayMessage = getErrorMessage(error.message || 'Authentication failed.');
+      toast.error(displayMessage, { duration: 5000 });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1515688594390-b649af70d282?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-      
-      <div className="relative z-10 w-full max-w-md glass-card p-8 flex flex-col items-center">
-        <div className="flex items-center gap-3 mb-2">
-          <Sparkles className="w-8 h-8 text-indigo-400" />
-          <h1 className="text-3xl font-light tracking-wider">IllumSkin<span className="font-bold text-indigo-400">Net</span></h1>
-        </div>
-        <p className="text-slate-400 mb-8 text-center text-sm">{isRegister ? 'Create your account' : 'Sign in to your account'}</p>
-        
-        <form onSubmit={handleSubmit} className="w-full space-y-5">
-          {isRegister && (
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2">Username</label>
-              <input 
-                type="text" 
-                required
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                placeholder="Jane Doe"
-              />
-            </div>
-          )}
-          
-          <div>
-            <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2">Email Address</label>
-            <input 
-              type="email" 
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-              placeholder="jane@example.com"
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white focus:outline-none"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#020202] relative overflow-hidden">
+      {/* Subtle cosmetic visual treatment */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-rose-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-          {isRegister && (
+      <div className="relative z-10 w-full max-w-[420px]">
+        {/* Header */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-8 h-8 text-rose-400" />
+            <h1 className="text-3xl font-light tracking-wide text-white">IllumSkin<span className="font-semibold text-rose-400">Net</span></h1>
+          </div>
+          <p className="text-slate-400 text-sm tracking-wider uppercase font-medium">AI-Powered Skin Intelligence</p>
+        </div>
+
+        {/* Glassmorphism Card */}
+        <div className="bg-white/[0.02] border border-white/10 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <h2 className="text-2xl font-light text-white mb-6 text-center">
+            {isRegister ? 'Create your IllumSkin-Net account' : 'Welcome back'}
+          </h2>
+
+          <form onSubmit={handleSubmit} className="w-full space-y-5">
+            {isRegister && (
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2 font-medium">Username</label>
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all placeholder:text-white/20"
+                  placeholder="Jane Doe"
+                />
+              </div>
+            )}
+
             <div>
-              <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2">Confirm Password</label>
+              <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2 font-medium">Email Address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all placeholder:text-white/20"
+                placeholder="jane@example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2 font-medium">Password</label>
               <div className="relative">
                 <input
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={showPassword ? "text" : "password"}
                   required
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 pr-12 text-white focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all placeholder:text-white/20"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white focus:outline-none"
-                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-          )}
-          
-          <button disabled={isLoading} type="submit" className="w-full accent-button rounded-lg py-3 mt-4 flex items-center justify-center gap-2">
-            <Camera className="w-5 h-5" />
-            <span>{isLoading ? 'Processing...' : (isRegister ? 'Create Account' : 'Sign In')}</span>
-          </button>
-        </form>
 
-        <button 
-          onClick={() => {
-            setIsRegister(!isRegister);
-            // Optional: reset fields when switching modes
-            setPassword('');
-            setConfirmPassword('');
-          }}
-          className="mt-6 text-sm text-slate-400 hover:text-white transition-colors"
-        >
-          {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Create one"}
-        </button>
+            {isRegister && (
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2 font-medium">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 pr-12 text-white focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all placeholder:text-white/20"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button
+              disabled={isLoading}
+              type="submit"
+              className="w-full bg-rose-500 hover:bg-rose-600 disabled:bg-rose-500/50 disabled:cursor-not-allowed text-white rounded-xl py-3.5 mt-2 flex items-center justify-center gap-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-[#050505]"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Camera className="w-5 h-5" />
+              )}
+              <span>{isLoading ? 'Processing...' : (isRegister ? 'Create Account' : 'Sign In')}</span>
+            </button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-white/5 text-center">
+            <button
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setPassword('');
+                setConfirmPassword('');
+              }}
+              className="text-sm text-slate-400 hover:text-white transition-colors focus:outline-none focus:underline"
+            >
+              {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Create Account"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

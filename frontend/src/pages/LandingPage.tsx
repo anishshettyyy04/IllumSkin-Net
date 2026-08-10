@@ -48,6 +48,14 @@ export default function LandingPage() {
                 <ShoppingBag className="w-4 h-4 text-indigo-400" />
                 Explore Shop
               </button>
+              <a
+                href="https://github.com/anishshettyyy04/IllumSkin-Net"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:w-auto glass-button px-8 py-4 rounded-full font-medium flex items-center justify-center gap-2 text-base hover:bg-white/10 transition-colors border border-white/20"
+              >
+                GitHub
+              </a>
             </div>
           </div>
 
@@ -190,9 +198,10 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-light mb-16 text-center">From Camera Input to <span className="font-medium text-rose-400">Shade Recommendation</span></h2>
 
-          <div className="glass-card p-8 md:p-12 rounded-3xl border border-white/5 overflow-x-auto hide-scrollbar">
+          <div className="glass-card p-8 md:p-12 rounded-3xl border border-white/5 overflow-hidden">
             {/* Desktop Pipeline (Horizontal) */}
-            <div className="hidden md:flex flex-row items-center justify-between min-w-[800px]">
+            <div className="hidden lg:flex flex-row items-center justify-between min-w-full overflow-x-auto hide-scrollbar pb-4">
+              <div className="flex flex-row items-center justify-between min-w-[800px] w-full">
               {[
                 { name: 'Camera Input', icon: Camera },
                 { name: 'MediaPipe Face Landmarks', icon: ScanFace },
@@ -219,10 +228,11 @@ export default function LandingPage() {
                   )}
                 </div>
               ))}
+              </div>
             </div>
 
             {/* Mobile Pipeline (Vertical) */}
-            <div className="flex md:hidden flex-col items-center">
+            <div className="flex lg:hidden flex-col items-center">
               {[
                 { name: 'Camera Input', icon: Camera },
                 { name: 'MediaPipe Face Landmarks', icon: ScanFace },
@@ -601,6 +611,11 @@ export default function LandingPage() {
             <ul className="space-y-3 text-sm text-slate-500">
               <li><button onClick={() => navigate('/login')} className="hover:text-white transition-colors">Login / Profile</button></li>
               <li><button onClick={() => navigate('/')} className="hover:text-white transition-colors">Research</button></li>
+              <li>
+                <a href="https://github.com/anishshettyyy04/IllumSkin-Net" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
+                  GitHub
+                </a>
+              </li>
             </ul>
           </div>
         </div>
