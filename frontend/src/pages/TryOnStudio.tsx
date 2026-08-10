@@ -35,21 +35,21 @@ export default function TryOnStudio() {
     console.log('[TRYON:PRODUCT]', product?.name || 'Foundation/AI', activeShade?.hex);
     console.log('[TRYON:MODE]', isDirectProductMode ? 'DIRECT_PRODUCT' : 'AI_CONSULTATION');
   }, [product, activeShade, isDirectProductMode]);
-  
+
   // UI State Machine
   const [studioState, setStudioState] = useState<StudioState>('WELCOME');
-  
+
   // Model & Hardware State
   const [modelReady, setModelReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [modelError, setModelError] = useState<string | null>(null);
-  
+
   // Results State
   const [completeLook, setCompleteLook] = useState<CompleteLook | null>(null);
   const [consultation, setConsultation] = useState<ConsultationResult | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
 
-  
+
   // Performance Metrics
   const [inferenceLatency, setInferenceLatency] = useState<number>(0);
   const [fps, setFps] = useState<number>(60);
@@ -75,24 +75,24 @@ export default function TryOnStudio() {
   const isFetchingRef = useRef(false);
   const inferenceStartRef = useRef<number>(0);
   const intervalRef = useRef<number | null>(null);
-  
+
   // Engine Refs
   const engineRef = useRef<VirtualMakeupEngine | null>(null);
   const schedulerRef = useRef<RenderScheduler | null>(null);
   const biEngineRef = useRef<BeautyIntelligenceEngine | null>(null);
   const makeupCanvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   // Face Tracking
   const faceState = useFaceMesh(videoRef);
   const landmarksRef = useRef<any>(null);
   const facesCountRef = useRef<number>(0);
   const headPoseRef = useRef<any>(null);
-  
+
   useEffect(() => {
     landmarksRef.current = faceState.landmarks;
     facesCountRef.current = faceState.facesCount;
     headPoseRef.current = faceState.headPose;
-    
+
     if (faceState.landmarks && faceState.landmarks.length > 0) {
       if (!landmarksRef.current || landmarksRef.current.length === 0) {
          console.log('[TRYON:LANDMARKS]', {
@@ -130,7 +130,7 @@ export default function TryOnStudio() {
 
     // 1. Initialize Web Worker early
     workerRef.current = new Worker(new URL('../workers/onnxWorker', import.meta.url), { type: 'module' });
-    
+
     workerRef.current.onmessage = async (e) => {
       const { type, status, albedo, illumination, message } = e.data;
 
@@ -141,38 +141,38 @@ export default function TryOnStudio() {
       if (type === 'STATUS' && status === 'READY') {
         setModelReady(true);
       }
-      
+
       if (type === 'RESULT' && albedo) {
         setInferenceLatency(Math.round(performance.now() - inferenceStartRef.current));
         setFps(Math.floor(Math.random() * (60 - 55 + 1) + 55));
 
         if (isFetchingRef.current) return;
         isFetchingRef.current = true;
-        
+
         console.log("[MATCH:REQUEST] user_albedo:", albedo);
-        
+
         setAnalysisStep(2); // "Computing True Skin Albedo"
-        
+
         try {
           const response = await RecommendationService.matchShade(albedo);
-          
+
           if (response.success && response.data.matches && response.data.matches.length > 0) {
             const topMatch = response.data.matches[0];
-            
+
             const undertone = topMatch.undertone || 'Neutral';
             const foundationId = topMatch.id;
-            
+
             setAnalysisStep(3); // "Detecting Undertone"
-            
+
             const lookResponse = await RecommendationService.getCompleteLook(foundationId, undertone, topMatch.match_percentage || 95.2);
-            
+
             if (lookResponse.success) {
               setCompleteLook(lookResponse.data);
-              
+
               if (biEngineRef.current && engineRef.current) {
                 const consult = biEngineRef.current.generateConsultation(undertone, foundationId.toString());
                 setConsultation(consult);
-                
+
                 const aiPreset = consult.looks[0].preset;
                 console.log('[TRYON:FOUNDATION:AI_PRESET]', {
                   foundation: !!aiPreset.foundation,
@@ -187,17 +187,17 @@ export default function TryOnStudio() {
                 if (dE >= 8) matchCategory = 'POOR_MATCH';
                 else if (dE >= 5) matchCategory = 'MODERATE_MATCH';
                 else if (dE >= 2) matchCategory = 'GOOD_MATCH';
-                
+
                 const productCoverage = aiPreset.foundation?.opacity ?? 0.35;
                 const renderStrength = productCoverage; // Do NOT artificially hide a poor shade
-                
+
                 console.log("[TRYON:FOUNDATION:MATCH]", {
                   deltaE00: dE,
                   matchCategory,
                   productCoverage,
                   renderStrength
                 });
-                
+
                 // Phase 1 & 2: Color Space Audit
                 console.log("[TRYON:COLOR:SPACE]", {
                   cameraSpace: "sRGB",
@@ -207,7 +207,7 @@ export default function TryOnStudio() {
                   gammaDecodeApplied: true,
                   gammaEncodeApplied: true
                 });
-                
+
                 console.log("[TRYON:COLOR:AUDIT]", {
                   cameraRGB: "Handled by ONNX Worker",
                   linearSkinRGB: "Handled by ONNX Worker",
@@ -265,13 +265,13 @@ export default function TryOnStudio() {
                   eyeShadow: false
                 });
               }
-              
+
               setTimeout(() => {
                 setAnalysisStep(4); // "Generating Recommendations"
                 setTimeout(() => {
                   setStudioState('RESULTS');
                   if (intervalRef.current) clearInterval(intervalRef.current);
-                  
+
                   if (schedulerRef.current) {
                     startSchedulerLoop();
                   }
@@ -308,7 +308,7 @@ export default function TryOnStudio() {
       setCameraError(null);
       console.log('[TRYON:CAMERA:SUCCESS] Camera stream acquired');
       console.log('[TRYON:MEDIAPIPE:INIT] MediaPipe initialized with stream');
-      
+
       // Simulate Preparation Steps
       setTimeout(() => setPrepStep(1), 800); // Camera Ready
       setTimeout(() => setPrepStep(2), 1600); // Face Centered
@@ -338,10 +338,10 @@ export default function TryOnStudio() {
 
   const applyDirectProductPreset = () => {
     if (!product || !activeShade || !engineRef.current) return;
-    
+
     // Construct CosmeticPreset based on category
     const preset: any = { opacity: 1.0, intensity: 1.0 };
-    
+
     // Build CosmeticProduct satisfying RenderOptions
     const shadeData = {
       id: activeShade.id || 'custom',
@@ -360,7 +360,7 @@ export default function TryOnStudio() {
       rendererHex: shadeData.hex,
       finish: shadeData.finish
     });
-    
+
     if (categoryStr === 'lipstick') {
       console.log('[TRYON:RENDERER] Activating LipRenderer');
       preset.lipstick = { shade: shadeData, opacity: shadeData.opacity, finish: shadeData.finish };
@@ -383,12 +383,12 @@ export default function TryOnStudio() {
         () => {
           const canvas = makeupCanvasRef.current;
           if (!canvas || !videoRef.current) return null;
-          
+
           if (canvas.width !== videoRef.current.videoWidth || canvas.height !== videoRef.current.videoHeight) {
             canvas.width = videoRef.current.videoWidth;
             canvas.height = videoRef.current.videoHeight;
             schedulerRef.current?.updateSize(canvas.width, canvas.height);
-            
+
             console.log('[TRYON:COORDS]', {
               videoIntrinsic: `${videoRef.current.videoWidth}x${videoRef.current.videoHeight}`,
               videoClient: `${videoRef.current.clientWidth}x${videoRef.current.clientHeight}`,
@@ -398,7 +398,7 @@ export default function TryOnStudio() {
               mirrored: true // Handled by CSS scale-x-100
             });
           }
-          
+
           return canvas;
         },
         (ctx: CanvasRenderingContext2D, width: number, height: number, landmarks: any[]) => {
@@ -408,7 +408,7 @@ export default function TryOnStudio() {
             facesCountRef.current,
             headPoseRef.current
           );
-          
+
           if (currentQuality === 'READY') {
             validFramesCount.current++;
             invalidFramesCount.current = 0;
@@ -454,13 +454,13 @@ export default function TryOnStudio() {
         const startY = (video.videoHeight - size) / 2;
         ctx.drawImage(video, startX, startY, size, size, 0, 0, 256, 256);
         const imageData = ctx.getImageData(0, 0, 256, 256);
-        
+
         let skinPoints = null;
         if (landmarksRef.current) {
           const leftCheek = getLeftCheek(landmarksRef.current);
           const rightCheek = getRightCheek(landmarksRef.current);
           const allPoints = [...leftCheek, ...rightCheek];
-          
+
           skinPoints = allPoints.map(lm => {
             const pixelX = Math.round((lm.x * video.videoWidth - startX) * (256 / size));
             const pixelY = Math.round((lm.y * video.videoHeight - startY) * (256 / size));
@@ -470,7 +470,7 @@ export default function TryOnStudio() {
             };
           });
         }
-        
+
         inferenceStartRef.current = performance.now();
         workerRef.current.postMessage({ type: 'INFERENCE', imageData, skinPoints });
       }
@@ -484,14 +484,14 @@ export default function TryOnStudio() {
     snapCanvas.height = videoRef.current.videoHeight;
     const ctx = snapCanvas.getContext('2d');
     if (!ctx) return;
-    
+
     // Draw mirrored video
     ctx.translate(snapCanvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(videoRef.current, 0, 0, snapCanvas.width, snapCanvas.height);
-    
+
     // (Tint is now handled purely by the VirtualMakeupEngine / FoundationRenderer)
-    
+
     // Add branding
     ctx.translate(snapCanvas.width, 0); // reset flip for text
     ctx.scale(-1, 1);
@@ -500,7 +500,7 @@ export default function TryOnStudio() {
     ctx.fillStyle = '#ffffff';
     ctx.font = '16px sans-serif';
     ctx.fillText('IllumSkin-Net Virtual Studio', 40, snapCanvas.height - 35);
-    
+
     const link = document.createElement('a');
     link.download = 'illumskin-snapshot.png';
     link.href = snapCanvas.toDataURL('image/png');
@@ -509,7 +509,7 @@ export default function TryOnStudio() {
 
   const handleAddLookToCart = () => {
     if (!completeLook) return;
-    
+
     // Add foundation
     addToCart({
       product_id: completeLook.foundation.id,
@@ -521,7 +521,7 @@ export default function TryOnStudio() {
       quantity: 1,
       image: completeLook.foundation.images?.[0]
     });
-    
+
     if (completeLook.lipstick) {
       addToCart({
         product_id: completeLook.lipstick.id,
@@ -534,7 +534,7 @@ export default function TryOnStudio() {
         image: completeLook.lipstick.images?.[0]
       });
     }
-    
+
     if (completeLook.blush) {
       addToCart({
         product_id: completeLook.blush.id,
@@ -547,7 +547,7 @@ export default function TryOnStudio() {
         image: completeLook.blush.images?.[0]
       });
     }
-    
+
     navigate('/cart');
   };
 
@@ -565,18 +565,18 @@ export default function TryOnStudio() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col h-screen overflow-hidden bg-black font-sans">
+    <div className="min-h-screen flex flex-col lg:h-screen lg:overflow-hidden bg-[#050505] font-sans">
       {/* Top Nav (Always visible) */}
       <div className="absolute top-0 w-full p-6 z-50 flex justify-between items-start pointer-events-none">
         <div className="flex gap-4 pointer-events-auto">
-          <button 
-            onClick={() => { stopCamera(); navigate(-1); }} 
+          <button
+            onClick={() => { stopCamera(); navigate(-1); }}
             className="flex items-center justify-center w-12 h-12 rounded-full glass-card hover:bg-white/10 transition-colors"
             aria-label="Go back"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          
+
           {studioState === 'RESULTS' && (
             <button
               onClick={() => setDemoMode(!demoMode)}
@@ -610,21 +610,21 @@ export default function TryOnStudio() {
       </div>
 
       {/* Main Video & Dynamic Layout Layer */}
-      <div className="flex-1 flex flex-col lg:flex-row h-full w-full mt-20 lg:mt-0">
-        
+      <div className="flex-1 flex flex-col lg:flex-row w-full lg:h-full mt-20 lg:mt-0">
+
         {/* Camera Container */}
-        <div className="relative w-full h-[55vh] lg:h-full lg:w-[65%] bg-[#050505] overflow-hidden shrink-0">
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
-            muted 
-            className="absolute inset-0 w-full h-full object-cover transform -scale-x-100" 
+        <div className="relative w-full h-[60vh] lg:h-full lg:w-[65%] bg-[#050505] overflow-hidden shrink-0">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-cover transform -scale-x-100"
           />
           <canvas ref={canvasRef} width="256" height="256" className="hidden" />
-          
+
           {/* Beauty Overlays Container */}
-          <div 
+          <div
             className="absolute inset-0 pointer-events-none"
             style={{ clipPath: showTint ? 'none' : `polygon(${sliderPosition}% 0, 100% 0, 100% 100%, ${sliderPosition}% 100%)` }}
           >
@@ -640,16 +640,16 @@ export default function TryOnStudio() {
         {/* Before/After Slider UI */}
         {studioState === 'RESULTS' && !showTint && (
           <div className="absolute inset-0 z-40 pointer-events-auto flex items-center">
-            <input 
-              type="range" 
-              min="0" max="100" 
-              value={sliderPosition} 
+            <input
+              type="range"
+              min="0" max="100"
+              value={sliderPosition}
               onChange={(e) => setSliderPosition(parseInt(e.target.value))}
               className="absolute w-full opacity-0 cursor-ew-resize h-full"
               style={{ zIndex: 50 }}
             />
             {/* Visual Divider line */}
-            <div 
+            <div
               className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] pointer-events-none flex items-center justify-center -translate-x-1/2"
               style={{ left: `${sliderPosition}%` }}
             >
@@ -674,8 +674,8 @@ export default function TryOnStudio() {
       {studioState !== 'WELCOME' && studioState !== 'PREPARATION' && (
         <div className="absolute top-4 lg:top-24 left-1/2 -translate-x-1/2 z-40 transition-opacity duration-300">
           <div className={`px-4 py-2 rounded-full backdrop-blur-md text-sm font-medium shadow-lg border transition-colors ${
-            faceQuality === 'READY' 
-              ? 'bg-green-500/20 text-green-300 border-green-500/30' 
+            faceQuality === 'READY'
+              ? 'bg-green-500/20 text-green-300 border-green-500/30'
               : 'bg-black/60 text-white border-white/10'
           }`}>
             {getQualityMessage(faceQuality)}
@@ -696,7 +696,7 @@ export default function TryOnStudio() {
             <p className="text-slate-400 text-lg mb-10 leading-relaxed">
               Our edge-AI technology analyzes your skin's albedo map to mathematically match your exact undertone and recommend your perfect beauty products.
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-12 text-left">
               <div className="glass-card p-5 rounded-xl border border-white/10">
                 <ShieldCheck className="w-5 h-5 text-indigo-400 mb-3" />
@@ -709,8 +709,8 @@ export default function TryOnStudio() {
                 <p className="text-sm text-slate-400">Lighting conditions, skin surface reflection (albedo), and subtle chromatic variations.</p>
               </div>
             </div>
-            
-            <button 
+
+            <button
               onClick={handleStartAnalysis}
               className="bg-white text-black font-medium text-lg px-10 py-4 rounded-full w-full sm:w-auto hover:scale-105 transition-transform flex items-center justify-center gap-2"
             >
@@ -754,7 +754,7 @@ export default function TryOnStudio() {
                 <div className="absolute top-0 left-0 w-full h-1 bg-indigo-400 shadow-[0_0_20px_rgba(99,102,241,1)] animate-[scan_2s_ease-in-out_infinite_alternate]" />
              </div>
           </div>
-          
+
           <div className="glass-card p-6 rounded-2xl max-w-sm w-full pointer-events-auto">
             <h2 className="text-lg font-medium text-white mb-4">IllumSkin-Net Analysis</h2>
             <div className="space-y-3 text-sm">
@@ -788,7 +788,7 @@ export default function TryOnStudio() {
         <>
           {/* Interactive Tools (Module 5 & 6) */}
           <div className="absolute right-4 top-24 lg:right-6 lg:top-32 z-40 flex flex-col gap-3">
-            <button 
+            <button
               onClick={() => setShowTint(!showTint)}
               className="w-10 h-10 lg:w-12 lg:h-12 rounded-full glass-card flex items-center justify-center hover:bg-white/10 transition-colors tooltip-trigger group"
               aria-label="Toggle Before/After Comparison"
@@ -798,7 +798,7 @@ export default function TryOnStudio() {
                 {showTint ? 'Show Original' : 'Show AI Tint'}
               </span>
             </button>
-            <button 
+            <button
               onClick={handleSnapshot}
               className="w-12 h-12 rounded-full glass-card flex items-center justify-center hover:bg-white/10 transition-colors group"
               aria-label="Download Snapshot"
@@ -813,7 +813,7 @@ export default function TryOnStudio() {
           {/* Recommendation Sheet (Split Screen on Desktop) */}
           <div className="flex-1 w-full bg-white lg:w-[35%] lg:h-full z-30 overflow-y-auto overflow-x-hidden border-l border-slate-200 shadow-xl">
             <div className="max-w-4xl mx-auto px-6 py-6 lg:pt-24 lg:pb-8">
-              
+
               {isDirectProductMode ? (
                 // Direct Product View
                 <div className="mb-8 max-w-2xl">
@@ -825,7 +825,7 @@ export default function TryOnStudio() {
                   <p className="text-slate-500 text-sm leading-relaxed mb-6">
                     Live try-on for shade <span className="text-slate-900 font-semibold">{activeShade?.name}</span>.
                   </p>
-                  
+
                   <div className="flex overflow-x-auto gap-4 pb-6 scrollbar-hide snap-x">
                     <div className="flex-shrink-0 w-64 bg-slate-50 p-4 rounded-2xl snap-start border border-indigo-100 shadow-sm">
                       <span className="text-[10px] uppercase tracking-widest text-indigo-500 font-bold mb-2 block">Selected Product</span>
@@ -840,7 +840,7 @@ export default function TryOnStudio() {
                     </div>
                   </div>
 
-                  <button 
+                  <button
                     onClick={() => {
                       if (product) {
                         addToCart({
@@ -913,7 +913,7 @@ export default function TryOnStudio() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Complementary Lipstick */}
                 {completeLook.lipstick && (
                   <div className="flex-shrink-0 w-64 bg-slate-50 p-4 rounded-2xl snap-start border border-slate-100 shadow-sm">
@@ -928,7 +928,7 @@ export default function TryOnStudio() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Complementary Blush */}
                 {completeLook.blush && (
                   <div className="flex-shrink-0 w-64 bg-slate-50 p-4 rounded-2xl snap-start border border-slate-100 shadow-sm">
@@ -946,7 +946,7 @@ export default function TryOnStudio() {
               </div>
 
               {/* Master Add to Cart */}
-              <button 
+              <button
                 onClick={handleAddLookToCart}
                 className="w-full bg-slate-900 text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-600 transition-colors text-lg shadow-lg hover:shadow-indigo-500/30"
               >
@@ -969,7 +969,7 @@ export default function TryOnStudio() {
           <button onClick={() => navigate('/shop')} className="glass-button px-8 py-3 rounded-full">Return to Shop</button>
         </div>
       )}
-      
+
       </div> {/* End Main Video & Dynamic Layout Layer */}
     </div>
   );

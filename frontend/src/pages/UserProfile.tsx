@@ -6,21 +6,23 @@ import { useAuthStore } from '../store/useAuthStore';
 import { OrderService } from '../services/orders';
 import toast from 'react-hot-toast';
 import { formatINR } from '../utils/currency';
+import Navbar from '../components/Navbar';
 
 export default function UserProfile() {
   const navigate = useNavigate();
   const { savedLooks, removeLook, addToCart } = useStore();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'looks' | 'orders'>('looks');
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
-    
+
     if (activeTab === 'orders') {
       setLoadingOrders(true);
       OrderService.getUserOrders()
@@ -56,154 +58,190 @@ export default function UserProfile() {
     toast.success('Look removed');
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    toast.success('Logged out successfully');
+  };
+
   if (!isAuthenticated || !user) return null;
 
   return (
-    <div className="min-h-screen p-6 md:p-12 max-w-6xl mx-auto flex flex-col bg-[#050505] text-white pt-24">
-      
-      {/* Header */}
-      <div className="flex items-center gap-6 mb-12">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-          <User className="w-10 h-10 text-white" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-light">My <span className="font-semibold text-indigo-400">Profile</span></h1>
-          <p className="text-slate-400">{user.username} • {user.email}</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#FDFCFB] text-slate-900 font-sans">
+      <Navbar />
 
-      {/* Tabs */}
-      <div className="flex gap-8 border-b border-white/10 mb-8">
-        <button 
-          onClick={() => setActiveTab('looks')}
-          className={`pb-4 px-2 text-lg font-medium transition-colors relative ${activeTab === 'looks' ? 'text-indigo-400' : 'text-slate-400 hover:text-white'}`}
-        >
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5" />
-            Saved Looks
-          </div>
-          {activeTab === 'looks' && <span className="absolute bottom-0 left-0 w-full h-[2px] bg-indigo-500 rounded-t-full" />}
-        </button>
-        <button 
-          onClick={() => setActiveTab('orders')}
-          className={`pb-4 px-2 text-lg font-medium transition-colors relative ${activeTab === 'orders' ? 'text-indigo-400' : 'text-slate-400 hover:text-white'}`}
-        >
-          <div className="flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            Order History
-          </div>
-          {activeTab === 'orders' && <span className="absolute bottom-0 left-0 w-full h-[2px] bg-indigo-500 rounded-t-full" />}
-        </button>
-      </div>
+      <div className="pt-28 pb-20 px-6 md:px-12 max-w-6xl mx-auto flex flex-col md:flex-row gap-10 lg:gap-16">
 
-      {/* Content */}
-      <div className="flex-1">
-        
-        {/* Saved Looks Tab */}
-        {activeTab === 'looks' && (
-          <div className="space-y-6">
-            {savedLooks.length === 0 ? (
-              <div className="glass-card p-12 flex flex-col items-center justify-center text-center border border-white/10 rounded-3xl">
-                <Sparkles className="w-12 h-12 text-slate-700 mb-4" />
-                <h3 className="text-xl font-medium mb-2">No Saved Looks Yet</h3>
-                <p className="text-slate-400 mb-6 max-w-md">Try our Virtual Beauty Studio to analyze your skin tone and get AI-curated recommendations.</p>
-                <button onClick={() => navigate('/studio')} className="accent-button px-6 py-3 rounded-full">
-                  Try AI Studio
-                </button>
+        {/* Sidebar / Header Information */}
+        <div className="w-full md:w-72 lg:w-80 flex-shrink-0">
+          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm md:sticky md:top-32">
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 shadow-sm mb-4">
+                <User className="w-10 h-10 text-slate-400" />
               </div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-6">
-                {savedLooks.map(look => (
-                  <div key={look.id} className="glass-card rounded-2xl border border-indigo-500/20 overflow-hidden flex flex-col">
-                    <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-lg">{look.name || 'My Curated Look'}</h3>
-                        <p className="text-xs text-slate-400 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {new Date(look.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <button 
-                        onClick={() => handleRemoveLook(look.id)}
-                        className="text-slate-500 hover:text-rose-400 transition-colors p-2 rounded-full hover:bg-rose-500/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="p-6 flex-1 space-y-4">
-                      {look.items.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full flex-shrink-0 border border-white/20" style={{ backgroundColor: item.hex }} />
-                          <div>
-                            <p className="text-xs text-indigo-300 font-medium uppercase tracking-wide">{item.brand}</p>
-                            <p className="text-sm font-medium">{item.name}</p>
-                            <p className="text-xs text-slate-400">Shade: {item.shade}</p>
-                          </div>
+              <h1 className="text-2xl font-semibold text-slate-900 mb-1">{user.username}</h1>
+              <p className="text-slate-500 text-sm">{user.email}</p>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => setActiveTab('looks')}
+                className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium transition-colors ${
+                  activeTab === 'looks'
+                    ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Sparkles className={`w-5 h-5 ${activeTab === 'looks' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                Saved Looks
+              </button>
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium transition-colors ${
+                  activeTab === 'orders'
+                    ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Package className={`w-5 h-5 ${activeTab === 'orders' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                Order History
+              </button>
+            </div>
+
+            <hr className="my-6 border-slate-100" />
+
+            <button
+              onClick={handleLogout}
+              className="w-full text-left px-5 py-3 text-sm font-medium text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 min-w-0">
+          <div className="mb-8">
+            <h2 className="text-3xl font-light text-slate-900 tracking-tight">
+              {activeTab === 'looks' ? 'My Saved Looks' : 'Order History'}
+            </h2>
+            <p className="text-slate-500 mt-2">
+              {activeTab === 'looks'
+                ? 'Your personalized beauty bundles saved from the AI studio.'
+                : 'Track and manage your past purchases.'}
+            </p>
+          </div>
+
+          {/* Saved Looks Tab */}
+          {activeTab === 'looks' && (
+            <div className="space-y-6">
+              {savedLooks.length === 0 ? (
+                <div className="bg-white p-12 flex flex-col items-center justify-center text-center border border-slate-200 rounded-3xl shadow-sm">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
+                    <Sparkles className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-medium mb-3 text-slate-900">No Saved Looks Yet</h3>
+                  <p className="text-slate-500 mb-8 max-w-md">Try our Virtual Beauty Studio to analyze your skin tone and get AI-curated recommendations.</p>
+                  <button onClick={() => navigate('/studio')} className="bg-slate-900 text-white px-8 py-3.5 rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-sm">
+                    Try AI Studio
+                  </button>
+                </div>
+              ) : (
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {savedLooks.map(look => (
+                    <div key={look.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-lg text-slate-900 mb-1">{look.name || 'My Curated Look'}</h3>
+                          <p className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
+                            <Calendar className="w-3.5 h-3.5" /> {new Date(look.date).toLocaleDateString()}
+                          </p>
                         </div>
-                      ))}
+                        <button
+                          onClick={() => handleRemoveLook(look.id)}
+                          className="text-slate-400 hover:text-rose-500 transition-colors p-2 rounded-full hover:bg-rose-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="p-6 flex-1 space-y-5">
+                        {look.items.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl flex-shrink-0 border border-slate-100 shadow-sm" style={{ backgroundColor: item.hex }} />
+                            <div>
+                              <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest mb-0.5">{item.brand}</p>
+                              <p className="text-sm font-semibold text-slate-900 line-clamp-1">{item.name}</p>
+                              <p className="text-xs text-slate-500 font-medium mt-0.5">Shade: <span className="text-slate-700">{item.shade}</span></p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-5 border-t border-slate-100">
+                        <button
+                          onClick={() => handleAddLookToCart(look)}
+                          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                          Add Look to Cart
+                        </button>
+                      </div>
                     </div>
-                    <div className="p-4 border-t border-white/10 bg-black/20">
-                      <button 
-                        onClick={() => handleAddLookToCart(look)}
-                        className="w-full bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Order History Tab */}
+          {activeTab === 'orders' && (
+            <div className="space-y-6">
+              {loadingOrders ? (
+                <div className="flex justify-center p-12">
+                  <div className="w-8 h-8 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="bg-white p-12 flex flex-col items-center justify-center text-center border border-slate-200 rounded-3xl shadow-sm">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
+                    <Package className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-medium mb-3 text-slate-900">No Orders Yet</h3>
+                  <p className="text-slate-500 mb-8 max-w-md">When you place an order, it will appear here.</p>
+                  <button onClick={() => navigate('/shop')} className="bg-slate-900 text-white px-8 py-3.5 rounded-xl font-medium hover:bg-slate-800 transition-colors shadow-sm">
+                    Start Shopping
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {orders.map(order => (
+                    <div key={order.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-3 mb-3">
+                          <span className="font-semibold text-lg text-slate-900">#{order.id.split('-')[0]}</span>
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-green-50 text-green-700 border border-green-100">
+                            {order.status}
+                          </span>
+                          <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
+                            {order.paymentMethod || 'COD'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-1 font-medium">Placed on {new Date(order.date || order.created_at).toLocaleDateString()}</p>
+                        <p className="text-sm text-slate-700 font-semibold">{order.items?.reduce((sum: any, item: any) => sum + item.quantity, 0) || 0} items • {formatINR(order.total)}</p>
+                      </div>
+
+                      <button
+                        onClick={() => navigate(`/order-confirmation/${order.id}`)}
+                        className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-5 py-3 rounded-xl transition-colors text-sm font-semibold"
                       >
-                        <ShoppingBag className="w-4 h-4" />
-                        Add to Cart
+                        View Details <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-        {/* Order History Tab */}
-        {activeTab === 'orders' && (
-          <div className="space-y-6">
-            {loadingOrders ? (
-              <div className="flex justify-center p-12">
-                <div className="w-8 h-8 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="glass-card p-12 flex flex-col items-center justify-center text-center border border-white/10 rounded-3xl">
-                <Package className="w-12 h-12 text-slate-700 mb-4" />
-                <h3 className="text-xl font-medium mb-2">No Orders Yet</h3>
-                <p className="text-slate-400 mb-6 max-w-md">When you place an order, it will appear here.</p>
-                <button onClick={() => navigate('/shop')} className="glass-button px-6 py-3 rounded-full border border-white/20 hover:bg-white/10 transition-colors">
-                  Start Shopping
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {orders.map(order => (
-                  <div key={order.id} className="glass-card rounded-2xl border border-white/10 p-6 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-semibold text-lg text-white">{order.id}</span>
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 capitalize">
-                          {order.status}
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                          {order.paymentMethod || 'COD'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-400 mb-1">Placed on {new Date(order.date || order.created_at).toLocaleDateString()}</p>
-                      <p className="text-sm text-slate-300">{order.items?.reduce((sum: any, item: any) => sum + item.quantity, 0) || 0} items • {formatINR(order.total)}</p>
-                    </div>
-                    
-                    <button 
-                      onClick={() => navigate(`/order-confirmation/${order.id}`)}
-                      className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors text-sm font-medium"
-                    >
-                      View Details <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
+        </div>
       </div>
     </div>
   );

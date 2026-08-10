@@ -16,16 +16,16 @@ import UserProfile from './pages/UserProfile';
 function App() {
   return (
     <>
-      <Toaster 
-        position="top-center" 
+      <Toaster
+        position="top-center"
         toastOptions={{
-          className: 'bg-[#111] text-white border border-white/10 shadow-2xl',
+          className: 'bg-white text-slate-900 border border-slate-200 shadow-xl',
           style: {
-            background: '#111',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.1)'
+            background: '#ffffff',
+            color: '#0f172a',
+            border: '1px solid #e2e8f0'
           }
-        }} 
+        }}
       />
       <BrowserRouter>
         <Routes>

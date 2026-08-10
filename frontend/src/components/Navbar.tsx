@@ -26,9 +26,9 @@ export default function Navbar() {
   }, [location.pathname]);
 
   const navLinks = [
+    { name: 'Home', path: '/' },
     { name: 'Shop', path: '/shop' },
-    { name: 'Categories', path: '/categories' },
-    { name: 'Virtual Studio', path: '/studio' }
+    { name: 'Virtual Try-On', path: '/studio' }
   ];
 
   // Logic to determine navbar colors based on the page context
@@ -53,14 +53,14 @@ export default function Navbar() {
 
   return (
     <>
-      <nav 
+      <nav
         className={`fixed top-0 w-full z-50 transition-all duration-500 ${navStyle}`}
         aria-label="Main Navigation"
       >
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
           <div className="flex items-center gap-10">
-            <button 
-              onClick={() => navigate('/')} 
+            <button
+              onClick={() => navigate('/')}
               className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg group"
               aria-label="IllumSkin Home"
             >
@@ -74,9 +74,9 @@ export default function Navbar() {
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.path;
                 return (
-                  <button 
+                  <button
                     key={link.name}
-                    onClick={() => navigate(link.path)} 
+                    onClick={() => navigate(link.path)}
                     className={`text-sm tracking-widest uppercase transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded relative py-2 ${
                       isActive ? activeTextColorClass : textColorClass
                     }`}
@@ -93,21 +93,21 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <button 
+            <button
               className={`p-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full hidden sm:block ${iconColorClass}`}
               aria-label="Search"
               onClick={() => navigate('/shop')}
             >
               <Search className="w-5 h-5" />
             </button>
-            <button 
+            <button
               className={`p-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full hidden sm:block ${iconColorClass}`}
               aria-label="User Profile"
               onClick={() => navigate('/profile')}
             >
               <User className="w-5 h-5" />
             </button>
-            <button 
+            <button
               onClick={() => navigate('/cart')}
               className={`p-2.5 transition-colors relative focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full ${iconColorClass}`}
               aria-label="Shopping Cart"
@@ -117,7 +117,7 @@ export default function Navbar() {
                 <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
               )}
             </button>
-            <button 
+            <button
               className={`md:hidden p-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-full ${iconColorClass}`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-expanded={mobileMenuOpen}
@@ -130,20 +130,20 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile Drawer */}
-      <div 
+      <div
         className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${
           mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         aria-hidden="true"
         onClick={() => setMobileMenuOpen(false)}
       >
-        <div 
+        <div
           className={`absolute top-0 right-0 w-3/4 max-w-sm h-full bg-white border-l border-slate-200 p-6 flex flex-col transition-transform duration-300 shadow-2xl ${
             mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div 
+          <div
             className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6 mt-16 cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors"
             onClick={() => {
               navigate('/profile');
@@ -158,10 +158,10 @@ export default function Navbar() {
               <p className="text-xs font-medium text-slate-500">Saved Looks & Orders</p>
             </div>
           </div>
-          
+
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
-              <button 
+              <button
                 key={link.name}
                 onClick={() => navigate(link.path)}
                 className={`text-left text-lg py-2 font-medium ${location.pathname === link.path ? 'text-indigo-600' : 'text-slate-600'}`}
