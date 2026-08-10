@@ -58,11 +58,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
     # Check duplicate email
     if db.query(User).filter(User.email == request.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
     
     # Check duplicate username
     if db.query(User).filter(User.username == request.username).first():
-        raise HTTPException(status_code=400, detail="Username already taken")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
     
     hashed_password = get_password_hash(request.password)
     user = User(

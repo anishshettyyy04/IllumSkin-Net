@@ -4,23 +4,23 @@
 
 @layer base {
   body {
-    @apply bg-[#0a0a0a] text-slate-100 antialiased font-sans;
+    @apply bg-[#FDFCFB] text-slate-900 antialiased font-sans;
   }
 
-  /* Custom Scrollbar for dark theme */
+  /* Custom Scrollbar for light theme */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #050505;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #333;
+    background: #cbd5e1;
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #94a3b8;
   }
 }
 
@@ -35,15 +35,16 @@
 }
 
 @layer components {
+  /* Legacy classes kept for compatibility during migration, updated to match light theme */
   .glass-card {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-xl rounded-2xl;
+    @apply bg-white border border-slate-200 shadow-sm rounded-2xl;
   }
   
   .glass-button {
-    @apply bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white transition-all duration-200;
+    @apply bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 transition-all duration-200;
   }
   
   .accent-button {
-    @apply bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-all duration-200;
+    @apply bg-slate-900 hover:bg-slate-800 text-white font-medium shadow-md transition-all duration-200;
   }
 }

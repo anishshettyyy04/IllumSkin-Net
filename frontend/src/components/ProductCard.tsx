@@ -37,7 +37,7 @@ const ProductCard = memo(({ id, brand, name, price, hex, shade, category, rating
   return (
     <div 
       onClick={handleCardClick}
-      className="glass-card p-4 hover:border-white/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] group flex flex-col h-full bg-white/5 relative cursor-pointer"
+      className="bg-white rounded-2xl border border-slate-100 p-4 hover:border-indigo-200 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group flex flex-col h-full relative cursor-pointer"
       tabIndex={0}
       role="button"
       onKeyDown={(e) => { if (e.key === 'Enter') handleCardClick(); }}
@@ -45,39 +45,39 @@ const ProductCard = memo(({ id, brand, name, price, hex, shade, category, rating
     >
       {/* Discount Badge */}
       {discount && (
-        <div className="absolute top-2 left-2 z-10 bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-widest">
+        <div className="absolute top-2 left-2 z-10 bg-rose-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
           {discount}% OFF
         </div>
       )}
 
       {/* Wishlist Button */}
       <button 
-        className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/40 text-slate-300 hover:text-rose-400 hover:bg-black/60 transition-colors backdrop-blur-sm"
+        className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors shadow-sm"
         aria-label="Add to wishlist"
         onClick={(e) => e.stopPropagation()}
       >
         <Heart className="w-4 h-4" />
       </button>
 
-      <div className="aspect-square rounded-xl mb-4 bg-gradient-to-br from-black/60 to-black/20 flex items-center justify-center relative overflow-hidden flex-shrink-0">
+      <div className="aspect-square rounded-xl mb-4 bg-slate-50 flex items-center justify-center relative overflow-hidden flex-shrink-0">
         {/* Abstract product representation */}
         <div 
-          className="w-24 h-24 rounded-full shadow-[0_0_30px_rgba(0,0,0,0.5)] transition-transform duration-700 group-hover:scale-125 group-hover:rotate-12" 
+          className="w-24 h-24 rounded-full shadow-lg transition-transform duration-700 group-hover:scale-110 group-hover:rotate-12 border-4 border-white" 
           style={{ backgroundColor: hex }}
         />
         
         {/* Hover Overlay Actions */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4 backdrop-blur-[2px]">
+        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 p-4 backdrop-blur-[2px]">
           <button 
             onClick={handleTryOn}
-            className="w-full max-w-[160px] bg-white text-black font-semibold py-2.5 rounded-full flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+            className="w-full max-w-[160px] bg-white text-slate-900 font-semibold py-2.5 rounded-full flex items-center justify-center gap-2 hover:scale-105 transition-transform shadow-lg"
             aria-label={`Live try-on for ${name}`}
           >
             <Camera className="w-4 h-4" />
             <span className="text-sm">Live Try-On</span>
           </button>
           <button 
-            className="w-full max-w-[160px] glass-button border border-white/40 text-white font-medium py-2.5 rounded-full flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
+            className="w-full max-w-[160px] bg-slate-900/60 border border-white/40 text-white font-medium py-2.5 rounded-full flex items-center justify-center gap-2 hover:bg-slate-900 transition-colors backdrop-blur-md"
             aria-label={`Quick view for ${name}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -88,45 +88,45 @@ const ProductCard = memo(({ id, brand, name, price, hex, shade, category, rating
       </div>
       
       <div className="flex flex-col flex-grow">
-        <div className="flex items-start justify-between mb-1">
-          <p className="text-[10px] text-indigo-300 font-semibold tracking-widest uppercase">{brand}</p>
+        <div className="flex items-start justify-between mb-1.5">
+          <p className="text-[10px] text-indigo-500 font-bold tracking-widest uppercase">{brand}</p>
           {isAiCompatible && (
-            <div className="flex items-center gap-1 text-indigo-400" title="AI Compatible">
+            <div className="flex items-center gap-1 text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded text-[10px] font-semibold" title="AI Compatible">
               <Sparkles className="w-3 h-3" />
             </div>
           )}
         </div>
         
-        <h3 className="font-medium text-base leading-tight mb-1 text-slate-100 group-hover:text-white transition-colors line-clamp-2">{name}</h3>
+        <h3 className="font-semibold text-sm leading-snug mb-1.5 text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2">{name}</h3>
         
-        <div className="flex items-center gap-1 mb-3">
-          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-          <span className="text-xs text-slate-300 font-medium">{rating}</span>
-          <span className="text-xs text-slate-500">({reviews})</span>
+        <div className="flex items-center gap-1.5 mb-4">
+          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+          <span className="text-xs text-slate-700 font-semibold">{rating}</span>
+          <span className="text-xs text-slate-400">({reviews})</span>
         </div>
         
-        <div className="mt-auto flex items-end justify-between pt-4 border-t border-white/10">
+        <div className="mt-auto flex items-end justify-between pt-4 border-t border-slate-100">
           <div className="flex flex-col">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium mb-0.5">Shade</span>
+            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold mb-1">Shade</span>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full border border-white/20 shadow-inner" style={{ backgroundColor: hex }} />
-              <span className="text-xs font-medium text-slate-200">{shade}</span>
+              <div className="w-4 h-4 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: hex }} />
+              <span className="text-xs font-semibold text-slate-700">{shade}</span>
             </div>
           </div>
           <div className="flex flex-col items-end">
             {discount && discount > 0 ? (
-              <span className="text-xs text-slate-500 line-through mb-0.5">{formatINR(price / (1 - discount/100))}</span>
+              <span className="text-[10px] text-slate-400 line-through mb-0.5">{formatINR(price / (1 - discount/100))}</span>
             ) : null}
-            <p className="font-semibold text-lg text-white leading-none">{formatINR(price)}</p>
+            <p className="font-bold text-lg text-slate-900 leading-none">{formatINR(price)}</p>
           </div>
         </div>
       </div>
       
-      {/* Mobile-friendly Add to Cart (always visible on very small screens, or we can just rely on the layout) */}
+      {/* Mobile-friendly Add to Cart */}
       <button 
-        className="mt-4 w-full bg-white/10 hover:bg-white/20 text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors md:hidden"
+        className="mt-4 w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors md:hidden"
         aria-label={`Add ${name} to cart`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); }}
       >
         <ShoppingBag className="w-4 h-4" />
         <span className="text-sm">Add to Cart</span>

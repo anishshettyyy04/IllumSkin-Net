@@ -5,7 +5,7 @@ const categories = [
   { id: 'foundation', title: 'Foundation', image: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?q=80&w=800&auto=format&fit=crop' },
   { id: 'lipstick', title: 'Lipstick', image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=800&auto=format&fit=crop' },
   { id: 'blush', title: 'Blush', image: 'https://images.unsplash.com/photo-1515688594390-b649af70d282?q=80&w=800&auto=format&fit=crop' },
-  { id: 'eye', title: 'Eye Makeup', image: 'https://images.unsplash.com/photo-1583241475880-083f84372725?q=80&w=800&auto=format&fit=crop' },
+  { id: 'eye-makeup', title: 'Eye Makeup', image: 'https://images.unsplash.com/photo-1583241475880-083f84372725?q=80&w=800&auto=format&fit=crop' },
 ];
 
 export default function CategorySelection() {
@@ -30,7 +30,7 @@ export default function CategorySelection() {
         {categories.map((cat) => (
           <div 
             key={cat.id}
-            onClick={() => cat.id === 'foundation' ? navigate('/products') : navigate('/studio', { state: { category: cat.title } })}
+            onClick={() => navigate(`/shop/${cat.id}`)}
             className={`group relative overflow-hidden rounded-2xl cursor-pointer h-80`}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10 transition-opacity group-hover:from-indigo-900/90"></div>

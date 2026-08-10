@@ -4,7 +4,7 @@ import LandingPage from './pages/LandingPage';
 import Marketplace from './pages/Marketplace';
 import Login from './pages/Login';
 import CategorySelection from './pages/CategorySelection';
-import ProductListing from './pages/ProductListing';
+
 import TryOnStudio from './pages/TryOnStudio';
 import LegacyStudio from './pages/LegacyStudio';
 import RecommendationCart from './pages/RecommendationCart';
@@ -32,8 +32,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/categories" element={<CategorySelection />} />
-          <Route path="/products" element={<ProductListing />} />
           <Route path="/shop" element={<Marketplace />} />
+          <Route path="/shop/:categoryId" element={<Marketplace />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/studio" element={<TryOnStudio />} />
           <Route path="/legacy-studio" element={<LegacyStudio />} />

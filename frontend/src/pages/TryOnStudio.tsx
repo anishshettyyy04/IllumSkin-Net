@@ -610,10 +610,10 @@ export default function TryOnStudio() {
       </div>
 
       {/* Main Video & Dynamic Layout Layer */}
-      <div className="flex-1 flex flex-col lg:block relative h-full w-full mt-20 lg:mt-0">
+      <div className="flex-1 flex flex-col lg:flex-row h-full w-full mt-20 lg:mt-0">
         
         {/* Camera Container */}
-        <div className="relative w-full h-[55vh] lg:h-full lg:absolute lg:inset-0 bg-[#050505] overflow-hidden shrink-0">
+        <div className="relative w-full h-[55vh] lg:h-full lg:w-[65%] bg-[#050505] overflow-hidden shrink-0">
           <video 
             ref={videoRef} 
             autoPlay 
@@ -810,31 +810,31 @@ export default function TryOnStudio() {
             </button>
           </div>
 
-          {/* Bottom Recommendation Sheet */}
-          <div className="flex-1 w-full bg-[#050505] lg:absolute lg:bottom-0 lg:bg-gradient-to-t lg:from-[#050505] lg:via-[#050505]/95 lg:to-transparent lg:pt-12 z-30 overflow-y-auto overflow-x-hidden">
-            <div className="max-w-4xl mx-auto px-6 py-6 lg:pb-8">
+          {/* Recommendation Sheet (Split Screen on Desktop) */}
+          <div className="flex-1 w-full bg-white lg:w-[35%] lg:h-full z-30 overflow-y-auto overflow-x-hidden border-l border-slate-200 shadow-xl">
+            <div className="max-w-4xl mx-auto px-6 py-6 lg:pt-24 lg:pb-8">
               
               {isDirectProductMode ? (
                 // Direct Product View
                 <div className="mb-8 max-w-2xl">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium tracking-wide mb-4">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold tracking-wide mb-4 border border-indigo-100">
                     <Sparkles className="w-3 h-3" />
                     Direct Try-On
                   </div>
-                  <h2 className="text-3xl font-light mb-3">{product?.brand} <span className="font-semibold">{product?.name}</span></h2>
-                  <p className="text-slate-300 text-sm leading-relaxed mb-6">
-                    Live try-on for shade <span className="text-white font-medium">{activeShade?.name}</span>.
+                  <h2 className="text-3xl font-light mb-3 text-slate-900">{product?.brand} <span className="font-semibold">{product?.name}</span></h2>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                    Live try-on for shade <span className="text-slate-900 font-semibold">{activeShade?.name}</span>.
                   </p>
                   
                   <div className="flex overflow-x-auto gap-4 pb-6 scrollbar-hide snap-x">
-                    <div className="flex-shrink-0 w-64 glass-card p-4 rounded-2xl snap-start border border-indigo-500/30">
-                      <span className="text-[10px] uppercase tracking-widest text-indigo-400 font-semibold mb-2 block">Selected Product</span>
+                    <div className="flex-shrink-0 w-64 bg-slate-50 p-4 rounded-2xl snap-start border border-indigo-100 shadow-sm">
+                      <span className="text-[10px] uppercase tracking-widest text-indigo-500 font-bold mb-2 block">Selected Product</span>
                       <div className="flex gap-3 items-center">
-                        <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-white/20 flex-shrink-0" style={{ backgroundColor: activeShade?.hex }} />
+                        <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-slate-200 flex-shrink-0 border border-white" style={{ backgroundColor: activeShade?.hex }} />
                         <div>
-                          <p className="text-xs text-slate-400">{product?.brand}</p>
-                          <p className="text-sm font-medium leading-tight line-clamp-1">{activeShade?.name}</p>
-                          <p className="text-xs font-semibold mt-1">{formatINR(product?.price)}</p>
+                          <p className="text-xs text-slate-500 font-medium">{product?.brand}</p>
+                          <p className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{activeShade?.name}</p>
+                          <p className="text-xs font-bold text-slate-700 mt-1">{formatINR(product?.price)}</p>
                         </div>
                       </div>
                     </div>
@@ -856,7 +856,7 @@ export default function TryOnStudio() {
                         navigate('/cart');
                       }
                     }}
-                    className="w-full bg-white text-black font-medium py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors text-lg shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                    className="w-full bg-slate-900 text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-600 transition-colors text-lg shadow-lg hover:shadow-indigo-500/30"
                   >
                     <ShoppingBag className="w-5 h-5" />
                     Add Product to Cart
@@ -867,25 +867,25 @@ export default function TryOnStudio() {
                   {demoMode ? (
                 // Demo Mode View
                 <div className="mb-6">
-                  <h2 className="text-3xl font-light mb-1">{completeLook.foundation.brand} <span className="font-semibold">Shade {completeLook.foundation.shade}</span></h2>
-                  <p className="text-slate-400 text-sm">
-                    Match Confidence: <span className="text-white font-medium">{completeLook.confidence?.toFixed(1) || 95.2}%</span>
+                  <h2 className="text-3xl font-light mb-1 text-slate-900">{completeLook.foundation.brand} <span className="font-semibold">Shade {completeLook.foundation.shade}</span></h2>
+                  <p className="text-slate-500 text-sm">
+                    Match Confidence: <span className="text-indigo-600 font-semibold">{completeLook.confidence?.toFixed(1) || 95.2}%</span>
                     {' • '}
-                    Undertone: <span className="text-white font-medium">{completeLook.undertone || 'Neutral'}</span>
+                    Undertone: <span className="text-slate-800 font-semibold">{completeLook.undertone || 'Neutral'}</span>
                   </p>
                 </div>
               ) : (
                 // Customer Beauty Consultant View
                 <div className="mb-8 max-w-2xl">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium tracking-wide mb-4">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold tracking-wide mb-4 border border-indigo-100">
                     <Sparkles className="w-3 h-3" />
                     AI Consultant Match
                   </div>
-                  <h2 className="text-3xl font-light mb-3">Your Complete Look</h2>
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    Based on your <span className="text-white font-medium">{consultation?.profile.undertone || completeLook.undertone || 'Neutral'}</span> undertone, we found a foundation that perfectly balances your complexion. We've paired it with complementary shades for a cohesive finish.
+                  <h2 className="text-3xl font-light mb-3 text-slate-900">Your Complete Look</h2>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    Based on your <span className="text-indigo-600 font-semibold">{consultation?.profile.undertone || completeLook.undertone || 'Neutral'}</span> undertone, we found a foundation that perfectly balances your complexion. We've paired it with complementary shades for a cohesive finish.
                     <br />
-                    <span className="mt-2 block text-xs text-indigo-300">
+                    <span className="mt-2 block text-xs text-indigo-600 font-medium">
                       {consultation ? (
                         <>
                           <span className="font-semibold block mb-1">Harmony Score: {consultation.looks[0].harmony.score}%</span>
@@ -902,28 +902,28 @@ export default function TryOnStudio() {
               {/* Products Row */}
               <div className="flex overflow-x-auto gap-4 pb-6 scrollbar-hide snap-x">
                 {/* Foundation */}
-                <div className="flex-shrink-0 w-64 glass-card p-4 rounded-2xl snap-start border border-indigo-500/30">
-                  <span className="text-[10px] uppercase tracking-widest text-indigo-400 font-semibold mb-2 block">Perfect Match Foundation</span>
+                <div className="flex-shrink-0 w-64 bg-indigo-50/50 p-4 rounded-2xl snap-start border border-indigo-100 shadow-sm">
+                  <span className="text-[10px] uppercase tracking-widest text-indigo-500 font-bold mb-2 block">Perfect Match Foundation</span>
                   <div className="flex gap-3 items-center">
-                    <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-white/20 flex-shrink-0" style={{ backgroundColor: completeLook.foundation.hex }} />
+                    <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-slate-200 flex-shrink-0 border border-white" style={{ backgroundColor: completeLook.foundation.hex }} />
                     <div>
-                      <p className="text-xs text-slate-400">{completeLook.foundation.brand}</p>
-                      <p className="text-sm font-medium leading-tight line-clamp-1">{completeLook.foundation.shade}</p>
-                      <p className="text-xs font-semibold mt-1">{formatINR(completeLook.foundation.price)}</p>
+                      <p className="text-xs text-slate-500 font-medium">{completeLook.foundation.brand}</p>
+                      <p className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{completeLook.foundation.shade}</p>
+                      <p className="text-xs font-bold text-slate-700 mt-1">{formatINR(completeLook.foundation.price)}</p>
                     </div>
                   </div>
                 </div>
                 
                 {/* Complementary Lipstick */}
                 {completeLook.lipstick && (
-                  <div className="flex-shrink-0 w-64 glass-card p-4 rounded-2xl snap-start">
-                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold mb-2 block">Complementary Lip</span>
+                  <div className="flex-shrink-0 w-64 bg-slate-50 p-4 rounded-2xl snap-start border border-slate-100 shadow-sm">
+                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2 block">Complementary Lip</span>
                     <div className="flex gap-3 items-center">
-                      <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-white/20 flex-shrink-0" style={{ backgroundColor: completeLook.lipstick.hex }} />
+                      <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-slate-200 flex-shrink-0 border border-white" style={{ backgroundColor: completeLook.lipstick.hex }} />
                       <div>
-                        <p className="text-xs text-slate-400">{completeLook.lipstick.brand}</p>
-                        <p className="text-sm font-medium leading-tight line-clamp-1">{completeLook.lipstick.name}</p>
-                        <p className="text-xs font-semibold mt-1">{formatINR(completeLook.lipstick.price)}</p>
+                        <p className="text-xs text-slate-500 font-medium">{completeLook.lipstick.brand}</p>
+                        <p className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{completeLook.lipstick.name}</p>
+                        <p className="text-xs font-bold text-slate-700 mt-1">{formatINR(completeLook.lipstick.price)}</p>
                       </div>
                     </div>
                   </div>
@@ -931,14 +931,14 @@ export default function TryOnStudio() {
                 
                 {/* Complementary Blush */}
                 {completeLook.blush && (
-                  <div className="flex-shrink-0 w-64 glass-card p-4 rounded-2xl snap-start">
-                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold mb-2 block">Complementary Cheek</span>
+                  <div className="flex-shrink-0 w-64 bg-slate-50 p-4 rounded-2xl snap-start border border-slate-100 shadow-sm">
+                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2 block">Complementary Cheek</span>
                     <div className="flex gap-3 items-center">
-                      <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-white/20 flex-shrink-0" style={{ backgroundColor: completeLook.blush.hex }} />
+                      <div className="w-12 h-12 rounded-full shadow-inner ring-1 ring-slate-200 flex-shrink-0 border border-white" style={{ backgroundColor: completeLook.blush.hex }} />
                       <div>
-                        <p className="text-xs text-slate-400">{completeLook.blush.brand}</p>
-                        <p className="text-sm font-medium leading-tight line-clamp-1">{completeLook.blush.name}</p>
-                        <p className="text-xs font-semibold mt-1">{formatINR(completeLook.blush.price)}</p>
+                        <p className="text-xs text-slate-500 font-medium">{completeLook.blush.brand}</p>
+                        <p className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{completeLook.blush.name}</p>
+                        <p className="text-xs font-bold text-slate-700 mt-1">{formatINR(completeLook.blush.price)}</p>
                       </div>
                     </div>
                   </div>
@@ -948,7 +948,7 @@ export default function TryOnStudio() {
               {/* Master Add to Cart */}
               <button 
                 onClick={handleAddLookToCart}
-                className="w-full bg-white text-black font-medium py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors text-lg shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                className="w-full bg-slate-900 text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-600 transition-colors text-lg shadow-lg hover:shadow-indigo-500/30"
               >
                 <ShoppingBag className="w-5 h-5" />
                 Add Complete Look to Cart

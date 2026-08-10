@@ -59,10 +59,10 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] text-white flex flex-col">
+      <div className="min-h-screen bg-[#FDFCFB] text-slate-900 flex flex-col font-sans">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="w-16 h-16 border-4 border-slate-600 border-t-indigo-500 rounded-full animate-spin"></div>
+          <div className="w-16 h-16 border-4 border-slate-200 border-t-indigo-500 rounded-full animate-spin"></div>
         </div>
       </div>
     );
@@ -70,15 +70,15 @@ export default function ProductDetailPage() {
 
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-[#050505] text-white flex flex-col">
+      <div className="min-h-screen bg-[#FDFCFB] text-slate-900 flex flex-col font-sans">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center">
           <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-          <h1 className="text-2xl font-light">Product Not Found</h1>
-          <p className="text-slate-400 mt-2">{error}</p>
+          <h1 className="text-2xl font-light text-slate-800">Product Not Found</h1>
+          <p className="text-slate-500 mt-2">{error}</p>
           <button 
             onClick={() => navigate('/shop')}
-            className="mt-6 glass-button px-6 py-2 rounded-full"
+            className="mt-6 bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full shadow-sm transition-colors"
           >
             Return to Shop
           </button>
@@ -92,11 +92,7 @@ export default function ProductDetailPage() {
   ];
 
   const handleTryOn = () => {
-    if (product.category.toLowerCase() === 'foundation') {
-      navigate('/studio', { state: { product, activeShade } });
-    } else {
-      navigate('/studio', { state: { product, activeShade } });
-    }
+    navigate('/studio', { state: { product, activeShade, category: product.category } });
   };
 
   const handleAddToCart = () => {
@@ -110,23 +106,22 @@ export default function ProductDetailPage() {
       quantity: 1,
       image: images[0]
     });
-    // Maybe show a toast, or navigate to cart
     navigate('/cart');
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-rose-500/30">
+    <div className="min-h-screen bg-[#FDFCFB] text-slate-900 selection:bg-rose-500/20 font-sans">
       <Navbar />
 
       <main className="pt-28 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
         
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-slate-500 mb-8">
-          <button onClick={() => navigate('/')} className="hover:text-white transition-colors">Home</button>
+        <nav className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400 mb-8">
+          <button onClick={() => navigate('/')} className="hover:text-slate-900 transition-colors">Home</button>
           <ChevronRight className="w-3 h-3" />
-          <button onClick={() => navigate('/shop')} className="hover:text-white transition-colors">Marketplace</button>
+          <button onClick={() => navigate('/shop')} className="hover:text-slate-900 transition-colors">Marketplace</button>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-slate-300">{product.name}</span>
+          <span className="text-slate-700">{product.name}</span>
         </nav>
 
         {/* Product Hero */}
@@ -138,8 +133,8 @@ export default function ProductDetailPage() {
                 <button
                   key={idx}
                   onClick={() => setActiveImage(idx)}
-                  className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
-                    activeImage === idx ? 'border-indigo-400 opacity-100' : 'border-transparent opacity-60 hover:opacity-100'
+                  className={`relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden border-2 transition-all shadow-sm ${
+                    activeImage === idx ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
                   <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
@@ -147,20 +142,20 @@ export default function ProductDetailPage() {
               ))}
             </div>
             
-            <div className="flex-1 bg-white/5 rounded-2xl overflow-hidden relative group aspect-[4/5] md:aspect-auto md:min-h-[600px] flex items-center justify-center">
+            <div className="flex-1 bg-white rounded-3xl overflow-hidden relative group aspect-[4/5] md:aspect-auto md:min-h-[600px] flex items-center justify-center border border-slate-100 shadow-sm">
               {activeShade && activeShade.id !== 'default' && (
                 <div 
-                  className="absolute inset-0 opacity-20 mix-blend-color transition-colors duration-500 pointer-events-none"
+                  className="absolute inset-0 opacity-10 mix-blend-multiply transition-colors duration-500 pointer-events-none"
                   style={{ backgroundColor: activeShade.hex }} 
                 />
               )}
               <img 
                 src={images[activeImage]} 
                 alt={product.name} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               {product.discount && (
-                <div className="absolute top-6 left-6 bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-sm uppercase tracking-widest shadow-xl">
+                <div className="absolute top-6 left-6 bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-widest shadow-md">
                   {product.discount}% OFF
                 </div>
               )}
@@ -168,42 +163,42 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm text-indigo-300 font-bold tracking-widest uppercase">{product.brand}</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs text-indigo-600 font-bold tracking-widest uppercase">{product.brand}</h2>
               <div className="flex gap-2">
-                <button className="w-10 h-10 rounded-full glass-card flex items-center justify-center text-slate-300 hover:text-rose-400 hover:bg-white/10 transition-colors">
+                <button className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all">
                   <Heart className="w-4 h-4" />
                 </button>
-                <button className="w-10 h-10 rounded-full glass-card flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10 transition-colors">
+                <button className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all">
                   <Share2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
             
-            <h1 className="text-3xl md:text-5xl font-light leading-tight mb-4">{product.name}</h1>
+            <h1 className="text-3xl md:text-5xl font-light leading-tight mb-4 text-slate-900 tracking-tight">{product.name}</h1>
             
-            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-white/10">
+            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200">
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-600'}`} />
+                  <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
                 ))}
-                <span className="text-sm font-medium ml-2">{product.rating}</span>
+                <span className="text-sm font-semibold text-slate-800 ml-2">{product.rating}</span>
                 <span className="text-sm text-slate-500 ml-1">({product.reviews} reviews)</span>
               </div>
             </div>
 
             <div className="flex items-end gap-3 mb-8">
               {product.discount && (
-                <span className="text-lg text-slate-500 line-through mb-1">{formatINR(product.price / (1 - product.discount/100))}</span>
+                <span className="text-lg text-slate-400 line-through mb-1">{formatINR(product.price / (1 - product.discount/100))}</span>
               )}
-              <span className="text-4xl font-medium">{formatINR(product.price)}</span>
+              <span className="text-4xl font-semibold text-slate-900 tracking-tight">{formatINR(product.price)}</span>
             </div>
 
             {product.highlights && (
               <ul className="flex flex-wrap gap-2 mb-8">
                 {product.highlights.map(h => (
-                  <li key={h} className="text-xs font-medium uppercase tracking-widest text-slate-300 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                    {h === 'AI Compatible' ? <Sparkles className="w-3 h-3 text-indigo-400" /> : <div className="w-1 h-1 rounded-full bg-slate-500" />}
+                  <li key={h} className="text-xs font-bold uppercase tracking-widest text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                    {h === 'AI Compatible' ? <Sparkles className="w-3 h-3 text-indigo-500" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />}
                     {h}
                   </li>
                 ))}
@@ -211,13 +206,13 @@ export default function ProductDetailPage() {
             )}
 
             {product.isAiCompatible && (
-              <div className="glass-card p-4 rounded-xl border border-indigo-500/30 bg-indigo-900/10 flex items-start gap-4 mb-10">
-                <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex-shrink-0 flex items-center justify-center text-indigo-400 mt-0.5">
+              <div className="bg-indigo-50/80 p-5 rounded-2xl border border-indigo-100 flex items-start gap-4 mb-10 shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center text-indigo-600 mt-0.5 shadow-sm">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-white mb-1">AI Compatible Product</h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">
+                  <h3 className="font-semibold text-indigo-900 mb-1">AI Compatible Product</h3>
+                  <p className="text-sm text-indigo-800/80 leading-relaxed">
                     Use IllumSkin-Net Live Try-On to receive a personalized shade recommendation based on your unique skin albedo.
                   </p>
                 </div>
@@ -228,10 +223,10 @@ export default function ProductDetailPage() {
               <div className="mb-10">
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <h3 className="font-medium text-lg">Select Shade</h3>
-                    <p className="text-sm text-slate-400">{activeShade?.name}</p>
+                    <h3 className="font-semibold text-lg text-slate-900">Select Shade</h3>
+                    <p className="text-sm text-slate-500 font-medium mt-1">{activeShade?.name}</p>
                   </div>
-                  <button onClick={handleTryOn} className="text-xs font-medium text-indigo-400 uppercase tracking-widest flex items-center gap-1 hover:text-indigo-300">
+                  <button onClick={handleTryOn} className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-full transition-colors">
                     Find my shade <Sparkles className="w-3 h-3" />
                   </button>
                 </div>
@@ -243,11 +238,11 @@ export default function ProductDetailPage() {
                       onClick={() => setActiveShade(s)}
                       className={`w-12 h-12 rounded-full transition-all flex items-center justify-center ${
                         activeShade?.id === s.id 
-                          ? 'ring-2 ring-offset-4 ring-offset-[#050505] ring-indigo-400 scale-110' 
-                          : 'ring-1 ring-white/10 hover:ring-white/30'
+                          ? 'ring-2 ring-offset-4 ring-offset-[#FDFCFB] ring-indigo-500 scale-110 shadow-md' 
+                          : 'ring-1 ring-slate-200 hover:ring-slate-300 hover:scale-105'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full shadow-inner" style={{ backgroundColor: s.hex }} />
+                      <div className="w-10 h-10 rounded-full shadow-inner border border-slate-100" style={{ backgroundColor: s.hex }} />
                     </button>
                   ))}
                 </div>
@@ -257,28 +252,28 @@ export default function ProductDetailPage() {
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <button 
                 onClick={handleTryOn}
-                className="flex-1 bg-white text-black font-medium px-6 py-4 rounded-full flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors group"
+                className="flex-1 bg-white border-2 border-slate-900 text-slate-900 font-semibold px-6 py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors shadow-sm"
               >
-                <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <Camera className="w-5 h-5" />
                 <span className="text-base">Live Try-On</span>
               </button>
               <button 
                 onClick={handleAddToCart}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-4 rounded-full flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md hover:shadow-lg"
               >
                 <ShoppingBag className="w-5 h-5" />
-                <span className="text-base">Add to Cart - {formatINR(product.price)}</span>
+                <span className="text-base">Add to Cart</span>
               </button>
             </div>
 
-            <div className="border-t border-white/10 pt-8">
-              <div className="flex border-b border-white/10 mb-6 overflow-x-auto scrollbar-hide">
+            <div className="border-t border-slate-200 pt-8">
+              <div className="flex border-b border-slate-200 mb-6 overflow-x-auto scrollbar-hide">
                 {['description', 'ingredients', 'usage'].map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-6 py-3 text-sm font-medium uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors ${
-                      activeTab === tab ? 'border-white text-white' : 'border-transparent text-slate-500 hover:text-slate-300'
+                    className={`px-6 py-3 text-sm font-bold uppercase tracking-widest whitespace-nowrap border-b-2 transition-all ${
+                      activeTab === tab ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
                     }`}
                   >
                     {tab}
@@ -286,7 +281,7 @@ export default function ProductDetailPage() {
                 ))}
               </div>
               
-              <div className="text-slate-300 text-sm leading-relaxed min-h-[120px]">
+              <div className="text-slate-600 text-sm leading-relaxed min-h-[120px]">
                 {activeTab === 'description' && (
                   <p>{product.description || 'No description available for this product.'}</p>
                 )}
@@ -303,38 +298,38 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Reviews Section */}
-        <div className="py-20 border-t border-white/10">
-          <h2 className="text-3xl font-light mb-12 text-center">Customer <span className="font-medium text-white">Reviews</span></h2>
+        <div className="py-20 border-t border-slate-200">
+          <h2 className="text-3xl font-light mb-12 text-center text-slate-900">Customer <span className="font-medium text-rose-500">Reviews</span></h2>
           
           <div className="grid md:grid-cols-4 gap-12">
             <div className="md:col-span-1 flex flex-col items-center md:items-start">
-              <span className="text-6xl font-light mb-2">{product.rating}</span>
+              <span className="text-6xl font-light mb-2 text-slate-900 tracking-tight">{product.rating}</span>
               <div className="flex gap-1 mb-2">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-600'}`} />
+                  <Star key={i} className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
                 ))}
               </div>
-              <p className="text-slate-400 text-sm mb-6">Based on {product.reviews} reviews</p>
-              <button className="glass-button w-full py-3 rounded-full font-medium">
+              <p className="text-slate-500 text-sm font-medium mb-6">Based on {product.reviews} reviews</p>
+              <button className="w-full py-3 rounded-full font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
                 Write a Review
               </button>
             </div>
             
             <div className="md:col-span-3 space-y-8">
               {product.reviewsList ? product.reviewsList.map(review => (
-                <div key={review.id} className="pb-8 border-b border-white/5">
+                <div key={review.id} className="pb-8 border-b border-slate-100">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="font-medium text-white">{review.user}</p>
+                      <p className="font-bold text-slate-900">{review.user}</p>
                       <div className="flex gap-1 mt-1">
                         {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}`} />
+                          <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
                         ))}
                       </div>
                     </div>
-                    <span className="text-xs text-slate-500">{review.date}</span>
+                    <span className="text-xs font-medium text-slate-400">{review.date}</span>
                   </div>
-                  <p className="text-slate-300 text-sm leading-relaxed">{review.comment}</p>
+                  <p className="text-slate-600 text-sm leading-relaxed">{review.comment}</p>
                 </div>
               )) : (
                 <p className="text-slate-500 italic">No reviews yet for this product.</p>
@@ -345,8 +340,8 @@ export default function ProductDetailPage() {
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="py-20 border-t border-white/5">
-            <h2 className="text-2xl font-light mb-8">You Might Also <span className="font-medium text-white">Like</span></h2>
+          <div className="py-20 border-t border-slate-200">
+            <h2 className="text-2xl font-light mb-8 text-slate-900">You Might Also <span className="font-medium text-rose-500">Like</span></h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {relatedProducts.map(p => (
                 <ProductCard key={p.id} {...(p as any)} />
