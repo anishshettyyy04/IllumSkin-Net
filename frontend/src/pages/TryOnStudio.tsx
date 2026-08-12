@@ -6,7 +6,6 @@ import { RecommendationService } from '../services/recommendations';
 import type { CompleteLook } from '../services/recommendations';
 import { useStore } from '../store/useStore';
 import { useFaceMesh } from '../hooks/useFaceMesh';
-import { getLeftCheek, getRightCheek } from '../ai/mediapipe/regions';
 import { VirtualMakeupEngine } from '../makeup/VirtualMakeupEngine';
 import { RenderScheduler } from '../makeup/core/RenderScheduler';
 import { LipRenderer } from '../makeup/LipRenderer';
@@ -17,6 +16,7 @@ import { BeautyIntelligenceEngine } from '../beauty/BeautyIntelligenceEngine';
 import type { ConsultationResult } from '../beauty/BeautyIntelligenceEngine';
 import { assessFaceQuality } from '../makeup/FaceQuality';
 import type { FaceQualityState } from '../makeup/FaceQuality';
+import type { PipelineMode } from '../workers/onnxWorker';
 
 type StudioState = 'WELCOME' | 'PREPARATION' | 'ANALYSIS' | 'RESULTS';
 
@@ -54,6 +54,10 @@ export default function TryOnStudio() {
   const [inferenceLatency, setInferenceLatency] = useState<number>(0);
   const [fps, setFps] = useState<number>(60);
   const [demoMode, setDemoMode] = useState<boolean>(false);
+  const [pipelineMode, setPipelineMode] = useState<PipelineMode>('BASELINE');
+  const pipelineModeRef = useRef<PipelineMode>('BASELINE');
+  useEffect(() => { pipelineModeRef.current = pipelineMode; }, [pipelineMode]);
+  const [metricsLog, setMetricsLog] = useState<any[]>([]);
 
   // Analysis Progress Tracking
   const [prepStep, setPrepStep] = useState(0);
@@ -75,6 +79,9 @@ export default function TryOnStudio() {
   const isFetchingRef = useRef(false);
   const inferenceStartRef = useRef<number>(0);
   const intervalRef = useRef<number | null>(null);
+  const previousLandmarksRef = useRef<any>(null);
+  const lastInferenceTimeRef = useRef<number>(0);
+  const lastValidResultRef = useRef<any>(null);
 
   // Engine Refs
   const engineRef = useRef<VirtualMakeupEngine | null>(null);
@@ -132,10 +139,15 @@ export default function TryOnStudio() {
     workerRef.current = new Worker(new URL('../workers/onnxWorker', import.meta.url), { type: 'module' });
 
     workerRef.current.onmessage = async (e) => {
-      const { type, status, albedo, illumination, message } = e.data;
+      const { type, status, albedo, illumination, message, metrics } = e.data;
 
       if (type === 'error') {
-        setModelError(message);
+        if (lastValidResultRef.current) {
+           console.warn("[TRYON:INFERENCE:FALLBACK]", message);
+        } else {
+           setModelError(message);
+        }
+        isFetchingRef.current = false;
         return;
       }
       if (type === 'STATUS' && status === 'READY') {
@@ -143,10 +155,21 @@ export default function TryOnStudio() {
       }
 
       if (type === 'RESULT' && albedo) {
+        lastValidResultRef.current = { albedo, illumination };
         setInferenceLatency(Math.round(performance.now() - inferenceStartRef.current));
         setFps(Math.floor(Math.random() * (60 - 55 + 1) + 55));
+        
+        if (metrics) {
+           setMetricsLog(prev => {
+             const newLog = [...prev, { timestamp: Date.now(), mode: pipelineModeRef.current, ...metrics, illumination, albedo }];
+             return newLog.slice(-1000);
+           });
+        }
 
-        if (isFetchingRef.current) return;
+        if (isFetchingRef.current) {
+          isFetchingRef.current = false;
+          return;
+        }
         isFetchingRef.current = true;
 
         console.log("[MATCH:REQUEST] user_albedo:", albedo);
@@ -444,37 +467,72 @@ export default function TryOnStudio() {
   const startInferenceLoop = () => {
     setAnalysisStep(1); // "Estimating Skin Tone"
     intervalRef.current = window.setInterval(() => {
+      const now = performance.now();
+      if (now - lastInferenceTimeRef.current < 200) return;
+      
       if (!modelReady || !videoRef.current || !canvasRef.current || !workerRef.current) return;
+      // Do not block inference if fetching Recommendation, just allow worker to run in background.
+      
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (ctx && video.readyState === video.HAVE_ENOUGH_DATA) {
-        const size = Math.min(video.videoWidth, video.videoHeight);
+      if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+      
+      const lms = landmarksRef.current;
+      const prevLms = previousLandmarksRef.current;
+      let headPoseVelocity = 0;
+      
+      if (lms && prevLms && lms.length === prevLms.length) {
+         // Stable landmarks (nose bridge 6)
+         const d = Math.sqrt(Math.pow(lms[6].x - prevLms[6].x, 2) + Math.pow(lms[6].y - prevLms[6].y, 2));
+         headPoseVelocity = Math.min(1.0, d * 10);
+      }
+      previousLandmarksRef.current = lms;
+
+      const mode = pipelineModeRef.current;
+      const imageDataList: ImageData[] = [];
+      const size = Math.min(video.videoWidth, video.videoHeight);
+      
+      if (mode === 'BASELINE') {
         const startX = (video.videoWidth - size) / 2;
         const startY = (video.videoHeight - size) / 2;
         ctx.drawImage(video, startX, startY, size, size, 0, 0, 256, 256);
-        const imageData = ctx.getImageData(0, 0, 256, 256);
-
-        let skinPoints = null;
-        if (landmarksRef.current) {
-          const leftCheek = getLeftCheek(landmarksRef.current);
-          const rightCheek = getRightCheek(landmarksRef.current);
-          const allPoints = [...leftCheek, ...rightCheek];
-
-          skinPoints = allPoints.map(lm => {
-            const pixelX = Math.round((lm.x * video.videoWidth - startX) * (256 / size));
-            const pixelY = Math.round((lm.y * video.videoHeight - startY) * (256 / size));
-            return {
-              x: Math.max(0, Math.min(255, pixelX)),
-              y: Math.max(0, Math.min(255, pixelY))
-            };
-          });
+        imageDataList.push(ctx.getImageData(0, 0, 256, 256));
+      } else {
+        if (!lms || lms.length < 468) return;
+        
+        const lm234 = lms[234];
+        const lm454 = lms[454];
+        const faceWidth = Math.sqrt(Math.pow(lm234.x - lm454.x, 2) + Math.pow(lm234.y - lm454.y, 2)) * video.videoWidth;
+        if (faceWidth < 50) return;
+        
+        let cropSize = faceWidth * 0.20;
+        cropSize = Math.max(32, Math.min(cropSize, faceWidth * 0.40));
+        
+        const regions = [lms[10], lms[117], lms[346]]; // Forehead, left cheek, right cheek
+        for (const lm of regions) {
+           if (!lm) continue;
+           const cx = lm.x * video.videoWidth;
+           const cy = lm.y * video.videoHeight;
+           let sx = cx - cropSize/2;
+           let sy = cy - cropSize/2;
+           
+           sx = Math.max(0, Math.min(video.videoWidth - cropSize, sx));
+           sy = Math.max(0, Math.min(video.videoHeight - cropSize, sy));
+           
+           if (sx < 0 || sy < 0 || sx + cropSize > video.videoWidth || sy + cropSize > video.videoHeight) continue;
+           
+           ctx.drawImage(video, sx, sy, cropSize, cropSize, 0, 0, 256, 256);
+           imageDataList.push(ctx.getImageData(0, 0, 256, 256));
         }
-
-        inferenceStartRef.current = performance.now();
-        workerRef.current.postMessage({ type: 'INFERENCE', imageData, skinPoints });
+        
+        if (imageDataList.length === 0) return;
       }
-    }, 1000);
+
+      lastInferenceTimeRef.current = now;
+      inferenceStartRef.current = now;
+      workerRef.current.postMessage({ type: 'INFERENCE', mode, imageDataList, headPoseVelocity, skinPoints: [] });
+    }, 50); // High frequency check, 200ms throttle internally
   };
 
   const handleSnapshot = () => {
@@ -591,11 +649,21 @@ export default function TryOnStudio() {
 
         <div className="flex flex-col items-end gap-3 pointer-events-auto">
           {demoMode && studioState === 'RESULTS' && (
-            <div className="glass-card px-4 py-3 flex flex-col gap-1 border-indigo-500/30">
+            <div className="glass-card px-4 py-3 flex flex-col gap-2 border-indigo-500/30">
               <div className="flex items-center gap-2 text-indigo-400 mb-1">
                 <Activity className="w-4 h-4" />
                 <span className="text-xs font-semibold tracking-widest uppercase">IEEE Benchmarks</span>
               </div>
+              <select 
+                value={pipelineMode} 
+                onChange={e => setPipelineMode(e.target.value as PipelineMode)}
+                className="bg-black/50 text-white text-xs p-1 rounded border border-white/20 mb-2"
+              >
+                <option value="BASELINE">A - BASELINE</option>
+                <option value="MULTI_REGION_MEAN">B - MULTI_REGION_MEAN</option>
+                <option value="VARIANCE_WEIGHTED">C - VARIANCE_WEIGHTED</option>
+                <option value="ADAPTIVE_EMA">D - ADAPTIVE_EMA</option>
+              </select>
               <div className="flex justify-between items-center gap-8 text-sm">
                 <span className="text-slate-400">Stream FPS</span>
                 <span className="font-mono text-white">{fps} FPS</span>
@@ -604,6 +672,20 @@ export default function TryOnStudio() {
                 <span className="text-slate-400">ONNX Latency</span>
                 <span className="font-mono text-green-400">{inferenceLatency}ms</span>
               </div>
+              <button 
+                onClick={() => {
+                   const blob = new Blob([JSON.stringify(metricsLog, null, 2)], { type: 'application/json' });
+                   const url = URL.createObjectURL(blob);
+                   const a = document.createElement('a');
+                   a.href = url;
+                   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                   a.download = `IEEE_metrics_${pipelineMode}_${timestamp}.json`;
+                   a.click();
+                }}
+                className="mt-2 text-xs bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 py-1 px-2 rounded"
+              >
+                Export JSON Metrics
+              </button>
             </div>
           )}
         </div>
