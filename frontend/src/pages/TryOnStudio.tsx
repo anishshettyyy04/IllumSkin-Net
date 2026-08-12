@@ -57,7 +57,7 @@ export default function TryOnStudio() {
   const [pipelineMode, setPipelineMode] = useState<PipelineMode>('BASELINE');
   const pipelineModeRef = useRef<PipelineMode>('BASELINE');
   useEffect(() => { pipelineModeRef.current = pipelineMode; }, [pipelineMode]);
-  const [metricsLog, setMetricsLog] = useState<any[]>([]);
+  const [metricsLog, setMetricsLog] = useState<Record<string, any[]>>({});
 
   // Analysis Progress Tracking
   const [prepStep, setPrepStep] = useState(0);
@@ -161,8 +161,21 @@ export default function TryOnStudio() {
         
         if (metrics) {
            setMetricsLog(prev => {
-             const newLog = [...prev, { timestamp: Date.now(), mode: pipelineModeRef.current, ...metrics, illumination, albedo }];
-             return newLog.slice(-1000);
+             const msgMode = e.data.mode || pipelineModeRef.current;
+             const currentLogs = prev[msgMode] || [];
+             const newLog = [...currentLogs, { 
+               timestamp: Date.now(), 
+               inferenceIndex: currentLogs.length + 1,
+               mode: msgMode, 
+               ...metrics, 
+               aggregatedIllumination: illumination, 
+               albedo,
+               'L*': 'unavailable',
+               'a*': 'unavailable',
+               'b*': 'unavailable',
+               DeltaE00: 'unavailable'
+             }];
+             return { ...prev, [msgMode]: newLog.slice(-1000) };
            });
         }
 
@@ -674,7 +687,8 @@ export default function TryOnStudio() {
               </div>
               <button 
                 onClick={() => {
-                   const blob = new Blob([JSON.stringify(metricsLog, null, 2)], { type: 'application/json' });
+                   const logsToExport = metricsLog[pipelineMode] || [];
+                   const blob = new Blob([JSON.stringify(logsToExport, null, 2)], { type: 'application/json' });
                    const url = URL.createObjectURL(blob);
                    const a = document.createElement('a');
                    a.href = url;

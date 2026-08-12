@@ -239,10 +239,11 @@ self.onmessage = async (e: MessageEvent) => {
         latencyMs,
         headPoseVelocity,
         variances,
-        weights: normalizedWeights
+        weights: normalizedWeights,
+        rawIlluminations: illuminations
       };
 
-      postMessage({ type: 'RESULT', albedo: emaAlbedo, illumination: finalIllum, metrics });
+      postMessage({ type: 'RESULT', mode, albedo: emaAlbedo, illumination: finalIllum, metrics });
       
     } catch (error: any) {
       console.error("Inference Error:", error);
