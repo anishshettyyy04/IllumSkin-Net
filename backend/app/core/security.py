@@ -1,12 +1,10 @@
 import os
 from datetime import datetime, timedelta
 from typing import Optional, Any, Union
-from passlib.context import CryptContext
+import bcrypt
 from jose import jwt
 from pydantic import BaseModel
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from fastapi import HTTPException, status
 
 # JWT Configuration
 SECRET_KEY = os.getenv("JWT_SECRET", "super-secret-default-key-for-local-dev-only")
@@ -17,10 +15,22 @@ class TokenData(BaseModel):
     email: Optional[str] = None
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        password_bytes = plain_password.encode('utf-8')
+        hash_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hash_bytes)
+    except Exception:
+        return False
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, 
+            detail="Password is too long (maximum 72 bytes)"
+        )
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password_bytes, salt).decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
