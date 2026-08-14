@@ -139,11 +139,12 @@ export default function TryOnStudio() {
     workerRef.current = new Worker(new URL('../workers/onnxWorker', import.meta.url), { type: 'module' });
 
     workerRef.current.onmessage = async (e) => {
-      const { type, status, albedo, illumination, message, metrics } = e.data;
+      const { type, status, albedo, illumination, message, metrics, mode: workerMode } = e.data;
 
       if (type === 'error') {
         if (lastValidResultRef.current) {
            console.warn("[TRYON:INFERENCE:FALLBACK]", message);
+
         } else {
            setModelError(message);
         }
@@ -158,24 +159,37 @@ export default function TryOnStudio() {
         lastValidResultRef.current = { albedo, illumination };
         setInferenceLatency(Math.round(performance.now() - inferenceStartRef.current));
         setFps(Math.floor(Math.random() * (60 - 55 + 1) + 55));
-        
-        if (metrics) {
+
+        if (metrics && workerMode) {
            setMetricsLog(prev => {
-             const msgMode = e.data.mode || pipelineModeRef.current;
-             const currentLogs = prev[msgMode] || [];
-             const newLog = [...currentLogs, { 
-               timestamp: Date.now(), 
+             const currentLogs = prev[workerMode] || [];
+             const newLog = [...currentLogs, {
+               timestamp: Date.now(),
                inferenceIndex: currentLogs.length + 1,
-               mode: msgMode, 
-               ...metrics, 
-               aggregatedIllumination: illumination, 
+               mode: workerMode,
+               batchSize: metrics.batchSize,
+               inferenceLatencyMs: metrics.inferenceLatencyMs,
+               rawIlluminations: metrics.rawIlluminations,
+               aggregatedIllumination: illumination,
+               headPoseVelocity: metrics.headPoseVelocity,
+               variances: metrics.variances,
+               weights: metrics.weights,
+               normalizedWeights: metrics.normalizedWeights,
                albedo,
                'L*': 'unavailable',
                'a*': 'unavailable',
                'b*': 'unavailable',
                DeltaE00: 'unavailable'
              }];
-             return { ...prev, [msgMode]: newLog.slice(-1000) };
+
+             console.log('[IEEE:METRICS]', {
+               mode: workerMode,
+               inferenceIndex: currentLogs.length + 1,
+               batchSize: metrics.batchSize,
+               recordCount: newLog.length
+             });
+
+             return { ...prev, [workerMode]: newLog.slice(-1000) };
            });
         }
 
@@ -482,19 +496,19 @@ export default function TryOnStudio() {
     intervalRef.current = window.setInterval(() => {
       const now = performance.now();
       if (now - lastInferenceTimeRef.current < 200) return;
-      
+
       if (!modelReady || !videoRef.current || !canvasRef.current || !workerRef.current) return;
       // Do not block inference if fetching Recommendation, just allow worker to run in background.
-      
+
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-      
+
       const lms = landmarksRef.current;
       const prevLms = previousLandmarksRef.current;
       let headPoseVelocity = 0;
-      
+
       if (lms && prevLms && lms.length === prevLms.length) {
          // Stable landmarks (nose bridge 6)
          const d = Math.sqrt(Math.pow(lms[6].x - prevLms[6].x, 2) + Math.pow(lms[6].y - prevLms[6].y, 2));
@@ -505,7 +519,7 @@ export default function TryOnStudio() {
       const mode = pipelineModeRef.current;
       const imageDataList: ImageData[] = [];
       const size = Math.min(video.videoWidth, video.videoHeight);
-      
+
       if (mode === 'BASELINE') {
         const startX = (video.videoWidth - size) / 2;
         const startY = (video.videoHeight - size) / 2;
@@ -513,15 +527,15 @@ export default function TryOnStudio() {
         imageDataList.push(ctx.getImageData(0, 0, 256, 256));
       } else {
         if (!lms || lms.length < 468) return;
-        
+
         const lm234 = lms[234];
         const lm454 = lms[454];
         const faceWidth = Math.sqrt(Math.pow(lm234.x - lm454.x, 2) + Math.pow(lm234.y - lm454.y, 2)) * video.videoWidth;
         if (faceWidth < 50) return;
-        
+
         let cropSize = faceWidth * 0.20;
         cropSize = Math.max(32, Math.min(cropSize, faceWidth * 0.40));
-        
+
         const regions = [lms[10], lms[117], lms[346]]; // Forehead, left cheek, right cheek
         for (const lm of regions) {
            if (!lm) continue;
@@ -529,16 +543,16 @@ export default function TryOnStudio() {
            const cy = lm.y * video.videoHeight;
            let sx = cx - cropSize/2;
            let sy = cy - cropSize/2;
-           
+
            sx = Math.max(0, Math.min(video.videoWidth - cropSize, sx));
            sy = Math.max(0, Math.min(video.videoHeight - cropSize, sy));
-           
+
            if (sx < 0 || sy < 0 || sx + cropSize > video.videoWidth || sy + cropSize > video.videoHeight) continue;
-           
+
            ctx.drawImage(video, sx, sy, cropSize, cropSize, 0, 0, 256, 256);
            imageDataList.push(ctx.getImageData(0, 0, 256, 256));
         }
-        
+
         if (imageDataList.length === 0) return;
       }
 
@@ -667,8 +681,8 @@ export default function TryOnStudio() {
                 <Activity className="w-4 h-4" />
                 <span className="text-xs font-semibold tracking-widest uppercase">IEEE Benchmarks</span>
               </div>
-              <select 
-                value={pipelineMode} 
+              <select
+                value={pipelineMode}
                 onChange={e => setPipelineMode(e.target.value as PipelineMode)}
                 className="bg-black/50 text-white text-xs p-1 rounded border border-white/20 mb-2"
               >
@@ -685,7 +699,7 @@ export default function TryOnStudio() {
                 <span className="text-slate-400">ONNX Latency</span>
                 <span className="font-mono text-green-400">{inferenceLatency}ms</span>
               </div>
-              <button 
+              <button
                 onClick={() => {
                    const logsToExport = metricsLog[pipelineMode] || [];
                    const blob = new Blob([JSON.stringify(logsToExport, null, 2)], { type: 'application/json' });

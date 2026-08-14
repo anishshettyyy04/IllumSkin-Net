@@ -236,7 +236,7 @@ self.onmessage = async (e: MessageEvent) => {
       
       const metrics = {
         batchSize: N,
-        latencyMs,
+        inferenceLatencyMs: latencyMs,
         headPoseVelocity,
         variances,
         weights: normalizedWeights,
